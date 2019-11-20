@@ -1,0 +1,19 @@
+Package: bacon
+Type: Package
+Title: Bacon Decomposition
+Version: 0.1.0
+Authors@R: person("Evan", "Flack", email = "evanjflack@gmail.com",
+  role = c("aut", "cre"))
+Maintainer: Evan Flack <evanjflack@gmail.com>
+Description: Functions for two-way fixed effects decomposition following Goodman-Bacon (2018)
+License: None
+Depends:
+  ggplot2, 
+	dplyr (>= 0.8.0.1)
+Suggests:
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
+RoxygenNote: 6.1.1
+Encoding: UTF-8
+LazyData: true
