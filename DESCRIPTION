@@ -5,10 +5,10 @@ Version: 0.1.0
 Authors@R: person("Evan", "Flack", email = "evanjflack@gmail.com",
   role = c("aut", "cre"))
 Maintainer: Evan Flack <evanjflack@gmail.com>
-Description: Functions for two-way fixed effects decomposition following Goodman-Bacon (2018)
+Description: Goodman-Bacon decomposition for differences-in-differences with variation in timing treatment.
 License: None
 Depends:
-  ggplot2, 
+  ggplot2,
 	dplyr (>= 0.8.0.1)
 Suggests:
     knitr,
