@@ -2,7 +2,7 @@
 
 ## Overview
 
-`bacon` is a package with tools to perform the Goodman-Bacon decomposition for differences-in-differences with variation in timing treatment.
+`bacon` is a package with tools to perform the Goodman-Bacon decomposition for differences-in-differences with variation in treatment timing.
 
 ## Functions
 * `bacon()`
