@@ -8,7 +8,6 @@
 \describe{
   \item{state}{the state}
   \item{class}{the high school class}
-  ...
 }}
 \usage{
 math_reform

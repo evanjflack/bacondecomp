@@ -1,13 +1,13 @@
 #' Decompose two-way fixed effects models
 #'
-#' bacon() is a function that decomposes two-way fixed effects models following
-#' Goodman-Bacon into all 2x2 difference in difference estimates
+#' bacon() is a function that perfroms the Goodman-Bacon decomposition for
+#'  differences-in-differences with variation in treatment timing.
 #'
 #' @param df a data.frame
 #' @param id_var character, name of id variable for units
 #' @param time_var character, name of time variable
 #' @param treat_time_var character, name of variable indicating when treatment
-#' switched on for unit
+#'  switched on for unit. Set to NA if unit is never treated.
 #' @param treated_var character, name of treatment variable (binary)
 #' @param outcome_var character, name of outcome variable
 #'

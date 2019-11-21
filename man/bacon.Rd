@@ -16,7 +16,7 @@ bacon(df, id_var = "id", time_var = "time",
 \item{time_var}{character, name of time variable}
 
 \item{treat_time_var}{character, name of variable indicating when treatment
-switched on for unit}
+switched on for unit. Set to NA if unit is never treated.}
 
 \item{treated_var}{character, name of treatment variable (binary)}
 
@@ -26,8 +26,8 @@ switched on for unit}
 data.frame of all 2x2 estimates and weights
 }
 \description{
-bacon() is a function that decomposes two-way fixed effects models following
-Goodman-Bacon into all 2x2 difference in difference estimates
+bacon() is a function that perfroms the Goodman-Bacon decomposition for
+ differences-in-differences with variation in treatment timing.
 }
 \examples{
 math_reform <- bacon::math_reform

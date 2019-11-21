@@ -7,6 +7,5 @@
 #' \describe{
 #'   \item{state}{the state}
 #'   \item{class}{the high school class}
-#'   ...
 #' }
 "math_reform"
