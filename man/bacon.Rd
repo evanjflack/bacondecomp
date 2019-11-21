@@ -4,8 +4,7 @@
 \alias{bacon}
 \title{Goodman-Bacon decomposition}
 \usage{
-bacon(df, id_var = "id", time_var = "time",
-  treat_time_var = "treat_time", treated_var = "treated",
+bacon(df, id_var = "id", time_var = "time", treated_var = "treated",
   outcome_var = "outcome")
 }
 \arguments{
@@ -14,9 +13,6 @@ bacon(df, id_var = "id", time_var = "time",
 \item{id_var}{character, name of id variable for units}
 
 \item{time_var}{character, name of time variable}
-
-\item{treat_time_var}{character, name of variable indicating the time period
-when treatment switched on for unit. Set to NA if unit is never treated.}
 
 \item{treated_var}{character, name of treatment variable (binary)}
 
@@ -33,7 +29,6 @@ bacon() is a function that perfroms the Goodman-Bacon decomposition for
 df_bacon <- bacon(df = bacon::math_reform,
                   id_var = "state",
                   time_var = "class",
-                  treat_time_var = "reformyr_math",
                   treated_var = "reform_math",
                   outcome_var = "incearn_ln")
 ggplot(df_bacon) +
