@@ -21,7 +21,6 @@ install_github("evanjflack/bacon")
 df_bacon <- bacon(df = bacon::math_reform,
                   id_var = "state",
                   time_var = "class",
-                  treat_time_var = "reformyr_math",
                   treated_var = "reform_math",
                   outcome_var = "incearn_ln")
 
