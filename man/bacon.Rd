@@ -5,7 +5,7 @@
 \title{Goodman-Bacon decomposition}
 \usage{
 bacon(df, id_var = "id", time_var = "time", treated_var = "treated",
-  outcome_var = "outcome")
+  outcome_var = "outcome", quiet = FALSE)
 }
 \arguments{
 \item{df}{a data.frame}
@@ -17,6 +17,9 @@ bacon(df, id_var = "id", time_var = "time", treated_var = "treated",
 \item{treated_var}{character, name of treatment variable (binary)}
 
 \item{outcome_var}{character, name of outcome variable}
+
+\item{quiet}{logical, if TRUE does not print summary of 2x2 estimates by
+type}
 }
 \value{
 data.frame of all 2x2 estimates and weights
@@ -26,6 +29,7 @@ bacon() is a function that perfroms the Goodman-Bacon decomposition for
  differences-in-differences with variation in treatment timing.
 }
 \examples{
+# Math Reform ---------------------------------------------------------------
 df_bacon <- bacon(df = bacon::math_reform,
                   id_var = "state",
                   time_var = "class",
@@ -35,4 +39,16 @@ ggplot(df_bacon) +
   aes(x = weight, y = estimate, shape = factor(type)) +
   labs(x = "Weight", y = "Estimate", shape = "Type") +
   geom_point()
+
+# Castle Doctrine -----------------------------------------------------------
+df_bacon <- bacon(df = bacon::castle,
+                  id_var = "state",
+                  time_var = "year",
+                  treated_var = "post",
+                  outcome_var = "l_homicide")
+ggplot(df_bacon) +
+  aes(x = weight, y = estimate, shape = factor(type)) +
+  labs(x = "Weight", y = "Estimate", shape = "Type") +
+  geom_point()
+
 }

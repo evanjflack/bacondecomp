@@ -8,10 +8,13 @@
 #' @param time_var character, name of time variable
 #' @param treated_var character, name of treatment variable (binary)
 #' @param outcome_var character, name of outcome variable
+#' @param quiet logical, if TRUE does not print summary of 2x2 estimates by
+#'  type
 #'
 #' @return data.frame of all 2x2 estimates and weights
 #'
 #' @examples
+#' # Math Reform ---------------------------------------------------------------
 #' df_bacon <- bacon(df = bacon::math_reform,
 #'                   id_var = "state",
 #'                   time_var = "class",
@@ -21,11 +24,24 @@
 #'   aes(x = weight, y = estimate, shape = factor(type)) +
 #'   labs(x = "Weight", y = "Estimate", shape = "Type") +
 #'   geom_point()
+#'
+#' # Castle Doctrine -----------------------------------------------------------
+#' df_bacon <- bacon(df = bacon::castle,
+#'                   id_var = "state",
+#'                   time_var = "year",
+#'                   treated_var = "post",
+#'                   outcome_var = "l_homicide")
+#' ggplot(df_bacon) +
+#'   aes(x = weight, y = estimate, shape = factor(type)) +
+#'   labs(x = "Weight", y = "Estimate", shape = "Type") +
+#'   geom_point()
+#'
 #' @export
 bacon <- function(df, id_var = "id",
                   time_var = "time",
                   treated_var = "treated",
-                  outcome_var = "outcome") {
+                  outcome_var = "outcome",
+                  quiet = FALSE) {
   # Rename variables
   df <- df %>%
     rename("id" = id_var, "time" = time_var, "treated" = treated_var,
@@ -84,9 +100,16 @@ bacon <- function(df, id_var = "id",
     two_by_twos[i, ] <- two_by_twos[i, ] %>%
       mutate(estimate = estimate1, weight = weight1)
   }
-  two_by_twos %>%
+  two_by_twos %<>%
     mutate(weight = weight / sum(weight)) %>%
     mutate(type = ifelse(untreated == 99999, "Treated vs Unteated",
                          ifelse(treated < untreated, "Early vs Late",
                                 "Late vs Early")))
+  if (quiet == F) {
+    two_by_twos %>%
+      group_by(type) %>%
+      summarise(weight = sum(weight), avg_estimate = mean(estimate)) %>%
+      print()
+  }
+  return(two_by_twos)
 }
