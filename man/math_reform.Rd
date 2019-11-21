@@ -6,14 +6,19 @@
 \title{Aggregated data from Goodman (In Press)}
 \format{A data.frame with 520 observations and 5 variables
 \describe{
-  \item{state}{the state}
-  \item{class}{the high school class}
+  \item{state}{The state (unit of analysis).}
+  \item{class}{The high school class (time).}
+  \item{reform_math}{Indicator for whether the reform was in place for the state/class.}
+  \item{reformyr_math}{The year the math reform was first implemented for the state. Set to NA if never implemented.}
+  \item{incearn_ln}{Natural log of future income.}
 }}
 \usage{
 math_reform
 }
 \description{
 A data set comntaining state/year level data on an educational reform and
-future income.
+ future income. This is an aggregated version of the data used by Goodman
+ (2019, JOLE) to estimate the effect of compulsory high school math
+ coursework on future earnings.
 }
 \keyword{datasets}
