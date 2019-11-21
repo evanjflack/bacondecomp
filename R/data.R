@@ -14,3 +14,8 @@
 #'   \item{incearn_ln}{Natural log of future income.}
 #' }
 "math_reform"
+
+#' Data from Cheng and Hoekstra (2013, JHR)
+#'
+#' @format A data.frame with 520 observations and 159 variables
+"castle"
