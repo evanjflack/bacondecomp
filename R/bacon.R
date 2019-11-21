@@ -26,6 +26,9 @@
 #'   geom_point()
 #'
 #' # Castle Doctrine -----------------------------------------------------------
+#' castle <- bacon::castle
+#' castle <- castle %>%
+#'   mutate(post = ifelse(cdl < 1, 0, 1))
 #' df_bacon <- bacon(df = bacon::castle,
 #'                   id_var = "state",
 #'                   time_var = "year",
