@@ -26,9 +26,6 @@
 #'   geom_point()
 #'
 #' # Castle Doctrine -----------------------------------------------------------
-#' castle <- bacon::castle
-#' castle <- castle %>%
-#'   mutate(post = ifelse(cdl < 1, 0, 1))
 #' df_bacon <- bacon(df = bacon::castle,
 #'                   id_var = "state",
 #'                   time_var = "year",
@@ -61,6 +58,8 @@ bacon <- function(df, id_var = "id",
     merge(df_treat, by = "id", all.x = T) %>%
     arrange(id, time)
 
+  first_period <- min(df$time)
+
   # Set NAS for treat_time to 99999
   df[is.na(df$treat_time), "treat_time"] <- 99999
 
@@ -68,6 +67,7 @@ bacon <- function(df, id_var = "id",
   two_by_twos <- expand.grid(unique(df$treat_time), unique(df$treat_time)) %>%
     rename("treated" = "Var1", "untreated" = "Var2") %>%
     subset(!(treated == untreated | treated == 99999)) %>%
+    subset(!(treated == first_period)) %>%
     mutate(estimate = 0, weight = 0)
 
   for (i in 1:nrow(two_by_twos)) {
@@ -103,11 +103,13 @@ bacon <- function(df, id_var = "id",
     two_by_twos[i, ] <- two_by_twos[i, ] %>%
       mutate(estimate = estimate1, weight = weight1)
   }
-  two_by_twos %<>%
+  two_by_twos <- two_by_twos %>%
     mutate(weight = weight / sum(weight)) %>%
-    mutate(type = ifelse(untreated == 99999, "Treated vs Unteated",
-                         ifelse(treated < untreated, "Early vs Late",
-                                "Late vs Early")))
+    mutate(type = ifelse(untreated == 99999, "Treated vs Untreated",
+                         ifelse(untreated == first_period,
+                                "Always Treated vs Later Treated",
+                                ifelse(treated < untreated, "Early vs Late",
+                                       "Late vs Early"))))
   if (quiet == F) {
     overall_est <- weighted.mean(two_by_twos$estimate, two_by_twos$weight)
     print(paste0("Two-way FE estimate = ", overall_est))
