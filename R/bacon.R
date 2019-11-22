@@ -109,6 +109,9 @@ bacon <- function(df, id_var = "id",
                          ifelse(treated < untreated, "Early vs Late",
                                 "Late vs Early")))
   if (quiet == F) {
+    overall_est <- weighted.mean(two_by_twos$estimate, two_by_twos$weight)
+    print(paste0("Two-way FE estimate = ", overall_est))
+
     two_by_twos %>%
       group_by(type) %>%
       summarise(weight = sum(weight), avg_estimate = mean(estimate)) %>%
