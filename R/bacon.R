@@ -11,6 +11,8 @@
 #' @param quiet logical, if TRUE does not print overal two-way fixed effects
 #'  estimate or summary of 2x2 estimates by type.
 #'
+#'
+#' @author Evan Flack
 #' @return data.frame of all 2x2 estimates and weights
 #'
 #' @examples
