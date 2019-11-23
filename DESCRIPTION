@@ -10,7 +10,8 @@ License: None
 Suggests:
     knitr,
     rmarkdown,
-    testthat
+    testthat,
+    ggplot2
 VignetteBuilder: knitr
 RoxygenNote: 6.1.1
 Encoding: UTF-8
