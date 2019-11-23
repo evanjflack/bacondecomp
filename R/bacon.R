@@ -35,6 +35,13 @@
 #'   geom_point()
 #'
 #' @export
+#'
+
+data <- bacon::castle
+formula <- l_homicide ~ post
+id_var <- "state"
+time_var <- "year"
+
 bacon <- function(formula,
                   data,
                   id_var,
@@ -43,50 +50,43 @@ bacon <- function(formula,
   # Rename variables
   outcome_var <- as.character(formula)[2]
   treated_var <- as.character(formula)[3]
-  data <- data %>%
-    rename("id" = id_var, "time" = time_var, "treated" = treated_var,
-           "outcome" = outcome_var) %>%
-    select(id, time, treated, outcome)
+
+  data <- data[, c(id_var, time_var, outcome_var, treated_var)]
+  colnames(data) <- c("id", "time", "outcome", "treated")
 
   # Check for NA observations
   nas <- sum(is.na(data))
   if (nas > 0) stop("NA observations")
 
   # Check for balanced panel
-  bal <- data %>%
-    group_by(id) %>%
-    tally()
-  balanced <- ifelse(mean(bal$n == bal$n[1]) == 1, 1, 0)
+  bal <- aggregate(time ~ id,  data = data, FUN = length)
+  balanced <- ifelse(mean(bal$time == bal$time[1]) == 1, 1, 0)
   if (!balanced) stop("Unbalanced Panel")
 
-  df_treat <- data %>%
-    group_by(id) %>%
-    filter(treated == 1) %>%
-    filter(row_number() == 1) %>%
-    select(id, time) %>%
-    rename("treat_time" = "time")
-  data <- data %>%
-    merge(df_treat, by = "id", all.x = T) %>%
-    arrange(id, time) %>%
-    mutate(treat_time = ifelse(is.na(treat_time), 99999, treat_time))
+
+  df_treat <- data[data$treat == 1, ]
+  df_treat <- df_treat[, c("id", "time")]
+  df_treat <- aggregate(time ~ id,  data = df_treat, FUN = min)
+  colnames(df_treat) <- c("id", "treat_time")
+  data <- merge(data, df_treat, by = "id", all.x = T)
+  data[is.na(data$treat_time), "treat_time"] <- 99999
 
   # First period in the panel
   first_period <- min(data$time)
 
   # create data.frame of all posible 2x2 estimates
   two_by_twos <- expand.grid(unique(data$treat_time),
-                             unique(data$treat_time)) %>%
-    rename("treated" = "Var1", "untreated" = "Var2") %>%
-    subset(!(treated == untreated)) %>%
-    subset(!(treated == 99999)) %>%
-    subset(!(treated == first_period)) %>%
-    mutate(estimate = 0, weight = 0)
+                             unique(data$treat_time))
+  colnames(two_by_twos) <- c("treated", "untreated")
+  two_by_twos <- two_by_twos[!(two_by_twos$treated == two_by_twos$untreated), ]
+  two_by_twos <- two_by_twos[!(two_by_twos$treated == 99999), ]
+  two_by_twos <- two_by_twos[!(two_by_twos$treated == first_period), ]
+  two_by_twos[, c("estimate", "weight")] <- 0
 
   for (i in 1:nrow(two_by_twos)) {
     treated_group <- two_by_twos[i, "treated"]
     untreated_group <- two_by_twos[i, "untreated"]
-    data1 <- data %>%
-      subset(treat_time %in% c(treated_group, untreated_group))
+    data1 <- data[data$treat_time %in% c(treated_group, untreated_group), ]
 
     # Calculated weight
     # n_u - observations in untreated group
@@ -126,29 +126,28 @@ bacon <- function(formula,
     estimate1 <- lm(outcome ~ treated + factor(time) + factor(id),
                    data = data1)$coefficients[2]
 
-    two_by_twos[i, ] <- two_by_twos[i, ] %>%
-      mutate(estimate = estimate1, weight = weight1)
+    two_by_twos[i, "estimate"] <- estimate1
+    two_by_twos[i, "weight"] <- weight1
   }
 
-  # Rescale weights to sum to 1
-  two_by_twos <- two_by_twos %>%
-    mutate(weight = weight / sum(weight)) %>%
-    # Classify estimate type
-    mutate(type = ifelse(untreated == 99999, "Treated vs Untreated",
-                         ifelse(untreated == first_period,
-                                "Always Treated vs Later Treated",
-                                ifelse(treated < untreated, "Early vs Late",
-                                       "Late vs Early"))))
+  # Rescale weights to 1
+  total_weight <- sum(two_by_twos$weight)
+  two_by_twos$weight <- two_by_twos$weight/total_weight
+  # Classify estimate type
+  two_by_twos$type <- ifelse(two_by_twos$untreated == 99999, "Treated vs Untreated",
+                             ifelse(two_by_twos$untreated == first_period, "Always Treated vs Later Treated",
+                                    ifelse(two_by_twos$treated < two_by_twos$untreated, "Early vs Late", "Late vs Early")))
 
   # Print two-way FE estimate and summary of 2x2 estimates by type
   if (quiet == F) {
     overall_est <- weighted.mean(two_by_twos$estimate, two_by_twos$weight)
     print(paste0("Two-way FE estimate = ", overall_est))
 
-    two_by_twos %>%
-      group_by(type) %>%
-      summarise(weight = sum(weight), avg_estimate = mean(estimate)) %>%
-      print()
+    avg_est <- aggregate(estimate ~ type, data = two_by_twos, FUN = mean)
+    colnames(avg_est) <- c("type", "avg_estimate")
+    sum_weight <- aggregate(weight ~ type, data = two_by_twos, FUN = sum)
+    avg_est_weight <- merge(avg_est, sum_weight, by = "type")
+    print(avg_est_weight)
   }
   return(two_by_twos)
 }
