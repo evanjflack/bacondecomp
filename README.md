@@ -30,3 +30,9 @@ ggplot(df_bacon) +
   geom_point()
 
 ```
+
+## References
+Goodman-Bacon, Andrew. 2018. "Difference-in-Differences with Variation in Treatment Timing." National Bureau
+of Economic Research Working Paper Series No. 25018. doi: 10.3386/w25018.
+
+[Paper Link](https://cdn.vanderbilt.edu/vu-my/wp-content/uploads/sites/2318/2019/07/29170757/ddtiming_7_29_2019.pdf)
