@@ -1,7 +1,5 @@
 ---
 title: "bacon"
-author: "Evan Flack"
-date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Vignette Title}
@@ -17,8 +15,13 @@ knitr::opts_chunk$set(
 ```
 
 ```{r castle}
+library(bacon)
+
 df_bacon <- bacon(l_homicide ~ post,
                   data = bacon::castle,
                   id_var = "state",
                   time_var = "year")
+
+plot(df_bacon$weight, df_bacon$estimate, pch = df_bacon$type, 
+     xlab = "Weight", ylab = "Estimate")
 ```
