@@ -46,7 +46,6 @@ bacon <- function(formula,
 
   data <- data[, c(id_var, time_var, outcome_var, treated_var)]
   colnames(data) <- c("id", "time", "outcome", "treated")
-
   # Check for NA observations
   nas <- sum(is.na(data))
   if (nas > 0) stop("NA observations")
@@ -56,7 +55,8 @@ bacon <- function(formula,
   balanced <- ifelse(mean(bal$time == bal$time[1]) == 1, 1, 0)
   if (!balanced) stop("Unbalanced Panel")
 
-  df_treat <- data[data$treat == 1, ]
+
+  df_treat <- data[data$treated == 1, ]
   df_treat <- df_treat[, c("id", "time")]
   df_treat <- aggregate(time ~ id,  data = df_treat, FUN = min)
   colnames(df_treat) <- c("id", "treat_time")
@@ -80,39 +80,9 @@ bacon <- function(formula,
     untreated_group <- two_by_twos[i, "untreated"]
     data1 <- data[data$treat_time %in% c(treated_group, untreated_group), ]
 
-    # Calculated weight
-    # n_u - observations in untreated group
-    # n_t - observations in treated group
-    # p_t - proportion of the time treated group was treated
-    # n_e - observations in early treated group
-    # n_l - observations in late treated group
-    # p_e - proportion of the time early treated group was treated
-    # p_l - proportion of the time late treated group was treated
-    if (untreated_group == 99999) {
-      # Treated vs untreated
-      n_u <- sum(data1$treat_time == untreated_group)
-      n_t <- sum(data1$treat_time == treated_group)
-      p_t <- mean(data1[data1$treat_time == treated_group, "treated"])
-      weight1 <- n_u * n_t * p_t * (1 - p_t)
-    } else if (treated_group < untreated_group) {
-      # early vs late (before late is treated)
-      data1 <- subset(data1, time < untreated_group)
-      n_e <- sum(data1$treat_time == treated_group)
-      n_l <- sum(data1$treat_time == untreated_group)
-      p_e <- mean(data1[data1$treat_time == treated_group, "treated"])
-      p_l <- mean(data1[data1$treat_time == untreated_group, "treated"])
-      weight1 <- n_e * n_l * (p_e - p_l) * (1 - (p_e - p_l))
-      weight1 <- weight1 * (1 - p_e) / (1 - p_e + p_l)
-    } else if (treated_group > untreated_group) {
-      # late vs early (after early is treated)
-      data1 <- subset(data1, time >= untreated_group)
-      n_e <- sum(data1$treat_time == untreated_group)
-      n_l <- sum(data1$treat_time == treated_group)
-      p_e <- mean(data1[data1$treat_time == untreated_group, "treated"])
-      p_l <- mean(data1[data1$treat_time == treated_group, "treated"])
-      weight1 <- n_e * n_l * (p_e - p_l) * (1 - (p_e - p_l))
-      weight1 <- weight1 * (p_l / (1 - p_e + p_l))
-    }
+    weight1 <- calculate_weights(data = data1,
+                                 treated_group = treated_group,
+                                 untreated_group = untreated_group)
 
     # Estimate 2x2 diff-in-diff
     estimate1 <- lm(outcome ~ treated + factor(time) + factor(id),
@@ -148,4 +118,54 @@ bacon <- function(formula,
     print(avg_est_weight)
   }
   return(two_by_twos)
+}
+
+
+
+#' Calculate Weights for 2x2 Grid
+#'
+#'  Calculated weights using:
+#'  n_u - observations in untreated group
+#'  n_t - observations in treated group
+#'  p_t - proportion of the time treated group was treated
+#'  n_e - observations in early treated group
+#'  n_l - observations in late treated group
+#'  p_e - proportion of the time early treated group was treated
+#'  p_l - proportion of the time late treated group was treated
+#'
+#'
+#' @param data
+#' @param treated_group
+#' @param untreated_group
+#'
+#' @return Scalar weight for 2x2 grid
+calculate_weights <- function(data,
+                              treated_group,
+                              untreated_group){
+  if (untreated_group == 99999) {
+    # Treated vs untreated
+    n_u <- sum(data$treat_time == untreated_group)
+    n_t <- sum(data$treat_time == treated_group)
+    p_t <- mean(data[data$treat_time == treated_group, "treated"])
+    weight1 <- n_u * n_t * p_t * (1 - p_t)
+  } else if (treated_group < untreated_group) {
+    # early vs late (before late is treated)
+    data <- subset(data, time < untreated_group)
+    n_e <- sum(data$treat_time == treated_group)
+    n_l <- sum(data$treat_time == untreated_group)
+    p_e <- mean(data[data$treat_time == treated_group, "treated"])
+    p_l <- mean(data[data$treat_time == untreated_group, "treated"])
+    weight1 <- n_e * n_l * (p_e - p_l) * (1 - (p_e - p_l))
+    weight1 <- weight1 * (1 - p_e) / (1 - p_e + p_l)
+  } else if (treated_group > untreated_group) {
+    # late vs early (after early is treated)
+    data <- subset(data, time >= untreated_group)
+    n_e <- sum(data$treat_time == untreated_group)
+    n_l <- sum(data$treat_time == treated_group)
+    p_e <- mean(data[data$treat_time == untreated_group, "treated"])
+    p_l <- mean(data[data$treat_time == treated_group, "treated"])
+    weight1 <- n_e * n_l * (p_e - p_l) * (1 - (p_e - p_l))
+    weight1 <- weight1 * (p_l / (1 - p_e + p_l))
+  }
+  return(weight1)
 }
