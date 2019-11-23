@@ -4,22 +4,20 @@
 \alias{bacon}
 \title{Goodman-Bacon decomposition}
 \usage{
-bacon(df, id_var = "id", time_var = "time", treated_var = "treated",
-  outcome_var = "outcome", quiet = FALSE)
+bacon(formula, data, id_var, time_var, quiet = FALSE)
 }
 \arguments{
-\item{df}{a data.frame}
+\item{formula}{a symbolic representation of the
+model to be fitted.}
 
-\item{id_var}{character, name of id variable for units}
+\item{data}{a data.frame containing the variables in the model}
 
-\item{time_var}{character, name of time variable}
+\item{id_var}{character, the name of id variable for units}
 
-\item{treated_var}{character, name of treatment variable (binary)}
+\item{time_var}{character, the name of time variable}
 
-\item{outcome_var}{character, name of outcome variable}
-
-\item{quiet}{logical, if TRUE does not print summary of 2x2 estimates by
-type}
+\item{quiet}{logical, if TRUE does not print overal two-way fixed effects
+estimate or summary of 2x2 estimates by type}
 }
 \value{
 data.frame of all 2x2 estimates and weights
