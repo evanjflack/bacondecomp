@@ -9,6 +9,7 @@
 
 ## Data
 * `math_refom`: A data set containing state/year level data on an educational reform and future income.
+* `castle`: A data set containing state/year level data on a crime reform.
 
 ## Installation
 ``` r
@@ -18,11 +19,10 @@ install_github("evanjflack/bacon")
 
 ## Usage
 ```r
-df_bacon <- bacon(df = bacon::math_reform,
+df_bacon <- bacon(incearnl_ln ~ reform_math,
+                  data = bacon::math_reform,
                   id_var = "state",
-                  time_var = "class",
-                  treated_var = "reform_math",
-                  outcome_var = "incearn_ln")
+                  time_var = "class")
 
 ggplot(df_bacon) +
   aes(x = weight, y = estimate, shape = factor(type)) +
