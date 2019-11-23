@@ -10,14 +10,14 @@ bacon(formula, data, id_var, time_var, quiet = FALSE)
 \item{formula}{a symbolic representation of the
 model to be fitted.}
 
-\item{data}{a data.frame containing the variables in the model}
+\item{data}{a data.frame containing the variables in the model.}
 
-\item{id_var}{character, the name of id variable for units}
+\item{id_var}{character, the name of id variable for units.}
 
-\item{time_var}{character, the name of time variable}
+\item{time_var}{character, the name of time variable.}
 
 \item{quiet}{logical, if TRUE does not print overal two-way fixed effects
-estimate or summary of 2x2 estimates by type}
+estimate or summary of 2x2 estimates by type.}
 }
 \value{
 data.frame of all 2x2 estimates and weights
@@ -28,22 +28,20 @@ bacon() is a function that perfroms the Goodman-Bacon decomposition for
 }
 \examples{
 # Math Reform ---------------------------------------------------------------
-df_bacon <- bacon(df = bacon::math_reform,
+df_bacon <- bacon(incearn_ln ~ reform_math,
+                  data = bacon::math_reform,
                   id_var = "state",
-                  time_var = "class",
-                  treated_var = "reform_math",
-                  outcome_var = "incearn_ln")
+                  time_var = "class")
 ggplot(df_bacon) +
   aes(x = weight, y = estimate, shape = factor(type)) +
   labs(x = "Weight", y = "Estimate", shape = "Type") +
   geom_point()
 
 # Castle Doctrine -----------------------------------------------------------
-df_bacon <- bacon(df = bacon::castle,
+df_bacon <- bacon(l_homicide ~ post,
+                  data = bacon::castle,
                   id_var = "state",
-                  time_var = "year",
-                  treated_var = "post",
-                  outcome_var = "l_homicide")
+                  time_var = "year")
 ggplot(df_bacon) +
   aes(x = weight, y = estimate, shape = factor(type)) +
   labs(x = "Weight", y = "Estimate", shape = "Type") +
