@@ -19,7 +19,7 @@ install_github("evanjflack/bacon")
 
 ## Usage
 ```r
-df_bacon <- bacon(incearnl_ln ~ reform_math,
+df_bacon <- bacon(incearn_ln ~ reform_math,
                   data = bacon::math_reform,
                   id_var = "state",
                   time_var = "class")
