@@ -1,5 +1,7 @@
 # bacon
 
+![](https://github.com/evanjflack/bacon/workflows/R-CMD-check/badge.svg)
+
 ## Overview
 
 `bacon` is a package with tools to perform the Goodman-Bacon decomposition for differences-in-differences with variation in treatment timing.
