@@ -57,12 +57,12 @@ bacon <- function(formula,
     group_by(id) %>%
     tally()
   balanced <- ifelse(mean(bal$n == bal$n[1]) == 1, 1, 0)
-  if(!balanced) stop("Unbalanced Panel")
+  if (!balanced) stop("Unbalanced Panel")
 
   df_treat <- data %>%
     group_by(id) %>%
     filter(treated == 1) %>%
-    filter(row_number() ==1) %>%
+    filter(row_number() == 1) %>%
     select(id, time) %>%
     rename("treat_time" = "time")
   data <- data %>%
@@ -74,7 +74,8 @@ bacon <- function(formula,
   first_period <- min(data$time)
 
   # create data.frame of all posible 2x2 estimates
-  two_by_twos <- expand.grid(unique(data$treat_time), unique(data$treat_time)) %>%
+  two_by_twos <- expand.grid(unique(data$treat_time),
+                             unique(data$treat_time)) %>%
     rename("treated" = "Var1", "untreated" = "Var2") %>%
     subset(!(treated == untreated)) %>%
     subset(!(treated == 99999)) %>%
@@ -84,7 +85,8 @@ bacon <- function(formula,
   for (i in 1:nrow(two_by_twos)) {
     treated_group <- two_by_twos[i, "treated"]
     untreated_group <- two_by_twos[i, "untreated"]
-    data1 <- subset(data, treat_time %in% c(treated_group, untreated_group))
+    data1 <- data %>%
+      subset(treat_time %in% c(treated_group, untreated_group))
 
     # Calculated weight
     # n_u - observations in untreated group
