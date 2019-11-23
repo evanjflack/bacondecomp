@@ -54,7 +54,6 @@ bacon <- function(formula,
 
   data <- data[, c(id_var, time_var, outcome_var, treated_var)]
   colnames(data) <- c("id", "time", "outcome", "treated")
-
   # Check for NA observations
   nas <- sum(is.na(data))
   if (nas > 0) stop("NA observations")
@@ -65,7 +64,7 @@ bacon <- function(formula,
   if (!balanced) stop("Unbalanced Panel")
 
 
-  df_treat <- data[data$treat == 1, ]
+  df_treat <- data[data$treated == 1, ]
   df_treat <- df_treat[, c("id", "time")]
   df_treat <- aggregate(time ~ id,  data = df_treat, FUN = min)
   colnames(df_treat) <- c("id", "treat_time")
@@ -144,9 +143,7 @@ bacon <- function(formula,
 #' @return Scalar weight for 2x2 grid
 calculate_weights <- function(data,
                               treated_group,
-                              untreated_group,
-                              time){
-
+                              untreated_group){
   if (untreated_group == 99999) {
     # Treated vs untreated
     n_u <- sum(data$treat_time == untreated_group)
@@ -174,3 +171,6 @@ calculate_weights <- function(data,
   }
   return(weight1)
 }
+
+
+
