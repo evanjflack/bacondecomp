@@ -21,10 +21,14 @@
 #'                   data = bacon::math_reform,
 #'                   id_var = "state",
 #'                   time_var = "class")
+#'
+#' \donttest{
 #' ggplot(df_bacon) +
 #'   aes(x = weight, y = estimate, shape = factor(type)) +
 #'   labs(x = "Weight", y = "Estimate", shape = "Type") +
 #'   geom_point()
+#'
+#'   }
 #'
 #' # Castle Doctrine -----------------------------------------------------------
 #' df_bacon <- bacon(l_homicide ~ post,
@@ -59,14 +63,14 @@ bacon <- function(formula,
   if (nas > 0) stop("NA observations")
 
   # Check for balanced panel
-  bal <- aggregate(time ~ id,  data = data, FUN = length)
+  bal <- stats::aggregate(time ~ id,  data = data, FUN = length)
   balanced <- ifelse(mean(bal$time == bal$time[1]) == 1, 1, 0)
   if (!balanced) stop("Unbalanced Panel")
 
 
   df_treat <- data[data$treated == 1, ]
   df_treat <- df_treat[, c("id", "time")]
-  df_treat <- aggregate(time ~ id,  data = df_treat, FUN = min)
+  df_treat <- stats::aggregate(time ~ id,  data = df_treat, FUN = min)
   colnames(df_treat) <- c("id", "treat_time")
   data <- merge(data, df_treat, by = "id", all.x = T)
   data[is.na(data$treat_time), "treat_time"] <- 99999
@@ -119,9 +123,9 @@ bacon <- function(formula,
     print(paste0("Two-way FE estimate = ", overall_est))
 
     # print summary of 2x2 estimates by type
-    avg_est <- aggregate(estimate ~ type, data = two_by_twos, FUN = mean)
+    avg_est <- stats::aggregate(estimate ~ type, data = two_by_twos, FUN = mean)
     colnames(avg_est) <- c("type", "avg_estimate")
-    sum_weight <- aggregate(weight ~ type, data = two_by_twos, FUN = sum)
+    sum_weight <- stats::aggregate(weight ~ type, data = two_by_twos, FUN = sum)
     avg_est_weight <- merge(avg_est, sum_weight, by = "type")
     print(avg_est_weight)
   }
