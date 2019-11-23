@@ -11,6 +11,8 @@
 #' @param quiet logical, if TRUE does not print overal two-way fixed effects
 #'  estimate or summary of 2x2 estimates by type.
 #'
+#'
+#' @author Evan Flack
 #' @return data.frame of all 2x2 estimates and weights
 #'
 #' @examples
@@ -29,10 +31,16 @@
 #'                   data = bacon::castle,
 #'                   id_var = "state",
 #'                   time_var = "year")
+#'
+#' \donttest{
+#'
 #' ggplot(df_bacon) +
 #'   aes(x = weight, y = estimate, shape = factor(type)) +
 #'   labs(x = "Weight", y = "Estimate", shape = "Type") +
 #'   geom_point()
+#'
+#'   }
+#'
 #'
 #' @export
 bacon <- function(formula,
