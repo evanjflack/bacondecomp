@@ -8,11 +8,7 @@ Maintainer: Evan Flack <evanjflack@gmail.com>
 Description: Goodman-Bacon decomposition for differences-in-differences with variation in treatment timing.
 License: None
 Depends:
-  ggplot2,
-	dplyr (>= 0.8.0.1)
 Suggests:
-    knitr,
-    rmarkdown
 VignetteBuilder: knitr
 RoxygenNote: 6.1.1
 Encoding: UTF-8
