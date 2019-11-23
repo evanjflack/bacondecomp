@@ -6,7 +6,7 @@ Authors@R: person("Evan", "Flack", email = "evanjflack@gmail.com",
   role = c("aut", "cre"))
 Maintainer: Evan Flack <evanjflack@gmail.com>
 Description: Goodman-Bacon decomposition for differences-in-differences with variation in treatment timing.
-License: None
+License: MIT + file LICENSE
 Suggests:
     knitr,
     rmarkdown,
