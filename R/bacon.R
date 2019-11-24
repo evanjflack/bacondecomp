@@ -32,14 +32,14 @@
 #'                   id_var = "state",
 #'                   time_var = "year")
 #'
-#' \donttest{
-#'
+#' 
+#' library(ggplot2)
 #' ggplot(df_bacon) +
 #'   aes(x = weight, y = estimate, shape = factor(type)) +
 #'   labs(x = "Weight", y = "Estimate", shape = "Type") +
 #'   geom_point()
 #'
-#'   }
+#' 
 #'
 #'
 #' @export
