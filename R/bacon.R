@@ -11,7 +11,6 @@
 #' @param quiet logical, if TRUE does not print overal two-way fixed effects
 #'  estimate or summary of 2x2 estimates by type.
 #'
-#'
 #' @author Evan Flack
 #' @return data.frame of all 2x2 estimates and weights
 #'
@@ -38,6 +37,7 @@ bacon <- function(formula,
                   id_var,
                   time_var,
                   quiet = FALSE) {
+  time <- NULL
   # Rename variables
   outcome_var <- as.character(formula)[2]
   treated_var <- as.character(formula)[3]
@@ -52,7 +52,6 @@ bacon <- function(formula,
   bal <- stats::aggregate(time ~ id,  data = data, FUN = length)
   balanced <- ifelse(mean(bal$time == bal$time[1]) == 1, 1, 0)
   if (!balanced) stop("Unbalanced Panel")
-
 
   df_treat <- data[data$treated == 1, ]
   df_treat <- df_treat[, c("id", "time")]
@@ -83,7 +82,7 @@ bacon <- function(formula,
                                  untreated_group = untreated_group)
 
     # Estimate 2x2 diff-in-diff
-    estimate1 <- lm(outcome ~ treated + factor(time) + factor(id),
+    estimate1 <- stats::lm(outcome ~ treated + factor(time) + factor(id),
                    data = data1)$coefficients[2]
 
     two_by_twos[i, "estimate"] <- estimate1
@@ -105,7 +104,8 @@ bacon <- function(formula,
   # Print two-way FE estimate and summary of 2x2 estimates by type
   if (quiet == F) {
     # Print two way FE estimate
-    overall_est <- weighted.mean(two_by_twos$estimate, two_by_twos$weight)
+    overall_est <- stats::weighted.mean(two_by_twos$estimate,
+                                        two_by_twos$weight)
     print(paste0("Two-way FE estimate = ", overall_est))
 
     # print summary of 2x2 estimates by type
@@ -132,9 +132,9 @@ bacon <- function(formula,
 #'  p_l - proportion of the time late treated group was treated
 #'
 #'
-#' @param data
-#' @param treated_group
-#' @param untreated_group
+#' @param data a data.frame
+#' @param treated_group the identifier of the treated group
+#' @param untreated_group the identifier of the untreated group
 #'
 #' @return Scalar weight for 2x2 grid
 calculate_weights <- function(data,
@@ -148,7 +148,7 @@ calculate_weights <- function(data,
     weight1 <- n_u * n_t * p_t * (1 - p_t)
   } else if (treated_group < untreated_group) {
     # early vs late (before late is treated)
-    data <- subset(data, time < untreated_group)
+    data <- data[data$time < untreated_group, ]
     n_e <- sum(data$treat_time == treated_group)
     n_l <- sum(data$treat_time == untreated_group)
     p_e <- mean(data[data$treat_time == treated_group, "treated"])
@@ -157,7 +157,7 @@ calculate_weights <- function(data,
     weight1 <- weight1 * (1 - p_e) / (1 - p_e + p_l)
   } else if (treated_group > untreated_group) {
     # late vs early (after early is treated)
-    data <- subset(data, time >= untreated_group)
+    data <- data[data$time >= untreated_group, ]
     n_e <- sum(data$treat_time == untreated_group)
     n_l <- sum(data$treat_time == treated_group)
     p_e <- mean(data[data$treat_time == untreated_group, "treated"])
