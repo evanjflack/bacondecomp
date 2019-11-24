@@ -27,24 +27,23 @@ bacon() is a function that perfroms the Goodman-Bacon decomposition for
  differences-in-differences with variation in treatment timing.
 }
 \examples{
-# Math Reform ---------------------------------------------------------------
-df_bacon <- bacon(incearn_ln ~ reform_math,
-                  data = bacon::math_reform,
-                  id_var = "state",
-                  time_var = "class")
-ggplot(df_bacon) +
-  aes(x = weight, y = estimate, shape = factor(type)) +
-  labs(x = "Weight", y = "Estimate", shape = "Type") +
-  geom_point()
-
 # Castle Doctrine -----------------------------------------------------------
 df_bacon <- bacon(l_homicide ~ post,
                   data = bacon::castle,
                   id_var = "state",
                   time_var = "year")
+
+\donttest{
+
 ggplot(df_bacon) +
   aes(x = weight, y = estimate, shape = factor(type)) +
   labs(x = "Weight", y = "Estimate", shape = "Type") +
   geom_point()
 
+  }
+
+
+}
+\author{
+Evan Flack
 }
