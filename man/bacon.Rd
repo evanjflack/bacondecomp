@@ -2,7 +2,7 @@
 % Please edit documentation in R/bacon.R
 \name{bacon}
 \alias{bacon}
-\title{Goodman-Bacon decomposition}
+\title{Goodman-Bacon Decomposition}
 \usage{
 bacon(formula, data, id_var, time_var, quiet = FALSE)
 }
