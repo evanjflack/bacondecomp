@@ -1,4 +1,4 @@
-#' Goodman-Bacon decomposition
+#' Goodman-Bacon Decomposition
 #'
 #' bacon() is a function that perfroms the Goodman-Bacon decomposition for
 #'  differences-in-differences with variation in treatment timing.
@@ -118,19 +118,14 @@ bacon <- function(formula,
   return(two_by_twos)
 }
 
-
-
 #' Calculate Weights for 2x2 Grid
 #'
 #'  Calculated weights using:
-#'  n_u - observations in untreated group
-#'  n_t - observations in treated group
-#'  p_t - proportion of the time treated group was treated
-#'  n_e - observations in early treated group
-#'  n_l - observations in late treated group
-#'  p_e - proportion of the time early treated group was treated
-#'  p_l - proportion of the time late treated group was treated
-#'
+#'  n_u - observations in untreated group,
+#'  n_k - observations in earlier treated group,
+#'  n_l - observations in later treated group,
+#'  D_k - proportion of time the earlier treated group was treated,
+#'  D_l - proportion of time the later treated group was treated.
 #'
 #' @param data a data.frame
 #' @param treated_group the identifier of the treated group

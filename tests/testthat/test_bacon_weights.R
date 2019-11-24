@@ -1,8 +1,9 @@
 library(bacon)
 
-# This test calculates the weights for
+# This test mimics the setup of figure 2 and tests that calculate_weights()
+# computes the correct weights
 
-# Results from the paper
+# Weights from the paper
 exp_weights <- c(.365, .222, .278, .135)
 
 # Data frame that mimics set up from figure 2, but with random outcomes
