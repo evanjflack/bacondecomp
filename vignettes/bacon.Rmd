@@ -51,7 +51,7 @@ ggplot(df_bacon) +
   geom_point()
 ```
 
-In this examlpe, one estimate has almost 60 percent of the weight: states treated in 2006 vs states that are never treated.
+In this example, one estimate has almost 60 percent of the weight: states treated in 2006 vs states that are never treated.
 
 ```{r rop_weight}
 top_weight <- df_bacon[order(-df_bacon$weight), ][1, ]
