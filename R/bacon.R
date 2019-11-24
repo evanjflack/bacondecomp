@@ -143,27 +143,31 @@ calculate_weights <- function(data,
   if (untreated_group == 99999) {
     # Treated vs untreated
     n_u <- sum(data$treat_time == untreated_group)
-    n_t <- sum(data$treat_time == treated_group)
-    p_t <- mean(data[data$treat_time == treated_group, "treated"])
-    weight1 <- n_u * n_t * p_t * (1 - p_t)
+    n_k <- sum(data$treat_time == treated_group)
+    n_ku <- n_k/(n_k + n_u)
+    D_k <- mean(data[data$treat_time == treated_group, "treated"])
+    V_ku <- n_ku*(1 - n_ku)*D_k*(1 - D_k)
+    weight1 <- (n_k + n_u)^2*V_ku
   } else if (treated_group < untreated_group) {
     # early vs late (before late is treated)
     data <- data[data$time < untreated_group, ]
-    n_e <- sum(data$treat_time == treated_group)
+    n_k <- sum(data$treat_time == treated_group)
     n_l <- sum(data$treat_time == untreated_group)
-    p_e <- mean(data[data$treat_time == treated_group, "treated"])
-    p_l <- mean(data[data$treat_time == untreated_group, "treated"])
-    weight1 <- n_e * n_l * (p_e - p_l) * (1 - (p_e - p_l))
-    weight1 <- weight1 * (1 - p_e) / (1 - p_e + p_l)
+    n_kl <- n_k/(n_k + n_l)
+    D_k <- mean(data[data$treat_time == treated_group, "treated"])
+    D_l <- mean(data[data$treat_time == untreated_group, "treated"])
+    V_kl <- n_kl*(1 - n_kl)*(D_k - D_l)/(1 - D_l)*(1 - D_k)/(1 - D_l)
+    weight1 <- ((n_k + n_l)*(1 - D_l))^2*V_kl
   } else if (treated_group > untreated_group) {
     # late vs early (after early is treated)
     data <- data[data$time >= untreated_group, ]
-    n_e <- sum(data$treat_time == untreated_group)
+    n_k <- sum(data$treat_time == untreated_group)
     n_l <- sum(data$treat_time == treated_group)
-    p_e <- mean(data[data$treat_time == untreated_group, "treated"])
-    p_l <- mean(data[data$treat_time == treated_group, "treated"])
-    weight1 <- n_e * n_l * (p_e - p_l) * (1 - (p_e - p_l))
-    weight1 <- weight1 * (p_l / (1 - p_e + p_l))
+    n_kl <- n_k/(n_k + n_l)
+    D_k <- mean(data[data$treat_time == untreated_group, "treated"])
+    D_l <- mean(data[data$treat_time == treated_group, "treated"])
+    V_kl <- n_kl*(1 - n_kl)*(D_l/D_k)*(D_k - D_l)/(D_k)
+    weight1 <- ((n_k + n_l)*D_k)^2*V_kl
   }
   return(weight1)
 }
