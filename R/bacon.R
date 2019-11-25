@@ -101,21 +101,13 @@ bacon <- function(formula,
                                              two_by_twos$untreated,
                                            "Early vs Late", "Late vs Early")))
 
-  # Print two-way FE estimate and summary of 2x2 estimates by type
-  if (quiet == F) {
-    # Print two way FE estimate
-    overall_est <- stats::weighted.mean(two_by_twos$estimate,
-                                        two_by_twos$weight)
-    print(paste0("Two-way FE estimate = ", overall_est))
+  overall_est <- stats::weighted.mean(two_by_twos$estimate,
+                                      two_by_twos$weight)
 
-    # print summary of 2x2 estimates by type
-    avg_est <- stats::aggregate(estimate ~ type, data = two_by_twos, FUN = mean)
-    colnames(avg_est) <- c("type", "avg_estimate")
-    sum_weight <- stats::aggregate(weight ~ type, data = two_by_twos, FUN = sum)
-    avg_est_weight <- merge(avg_est, sum_weight, by = "type")
-    print(avg_est_weight)
-  }
-  return(two_by_twos)
+  ret <- list(estimate = overall_est, decomp = two_by_twos,
+              formula = formula)
+  class(ret) <- "bacon"
+  ret
 }
 
 #' Calculate Weights for 2x2 Grid
@@ -165,4 +157,20 @@ calculate_weights <- function(data,
     weight1 <- ((n_k + n_l)*D_k)^2*V_kl
   }
   return(weight1)
+}
+
+print.bacon <- function(object) {
+  # Print two way FE estimate
+  print(paste("Two-way FE Estimate =", object$estimate))
+}
+
+summary.bacon <- function(object) {
+  # Print two way FE estimate
+  print(paste0("Two-way FE estimate = ", object$estimate))
+  # print summary of 2x2 estimates by type
+  avg_est <- stats::aggregate(estimate ~ type, data = object$decomp, FUN = mean)
+  colnames(avg_est) <- c("type", "avg_estimate")
+  sum_weight <- stats::aggregate(weight ~ type, data = object$decomp, FUN = sum)
+  avg_est_weight <- merge(avg_est, sum_weight, by = "type")
+  print(avg_est_weight)
 }
