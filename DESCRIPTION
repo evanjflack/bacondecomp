@@ -11,7 +11,8 @@ Suggests:
     knitr,
     rmarkdown,
     testthat,
-    ggplot2
+    ggplot2,
+    covr
 VignetteBuilder: knitr
 RoxygenNote: 6.1.1
 Encoding: UTF-8
