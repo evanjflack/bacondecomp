@@ -27,10 +27,11 @@ The following example comes from Cheng and Hoekstra (2013, JHR). The authors est
 ```{r castle, fig.width = 7}
 library(bacon)
 library(ggplot2)
-df_bacon <- bacon(l_homicide ~ post,
-                  data = bacon::castle,
-                  id_var = "state",
-                  time_var = "year")
+decomp <- bacon(l_homicide ~ post,
+                data = bacon::castle,
+                id_var = "state",
+                time_var = "year")
+df_bacon <- decomp$decomp
 
 ```
 

@@ -5,10 +5,11 @@ library(bacon)
 
 
 # Bacon decomp
-df_bacon <- bacon(l_homicide ~ post,
-                  data = bacon::castle,
-                  id_var = "state",
-                  time_var = "year")
+decomp <- bacon(l_homicide ~ post,
+                data = bacon::castle,
+                id_var = "state",
+                time_var = "year")
+df_bacon <- decomp$decomp
 # Weighted Sum
 two_way_bacon_coef <- sum(df_bacon$estimate * df_bacon$weight)
 

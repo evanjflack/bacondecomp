@@ -16,10 +16,10 @@
 #'
 #' @examples
 #' # Castle Doctrine -----------------------------------------------------------
-#' df_bacon <- bacon(l_homicide ~ post,
-#'                   data = bacon::castle,
-#'                   id_var = "state",
-#'                   time_var = "year")
+#' decomp <- bacon(l_homicide ~ post,
+#'                 data = bacon::castle,
+#'                 id_var = "state",
+#'                 time_var = "year")
 #'
 #' \donttest{
 #'

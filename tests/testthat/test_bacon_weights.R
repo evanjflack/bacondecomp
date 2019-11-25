@@ -14,10 +14,11 @@ df_test <- data.frame(time = rep(seq(1, 100), 3),
                       y = rnorm(300))
 
 # Find weights
-df_bacon <- bacon(y ~ treated,
-                  data = df_test,
-                  id_var = "id",
-                  time_var = "time")
+decomp <- bacon(y ~ treated,
+                data = df_test,
+                id_var = "id",
+                time_var = "time")
+df_bacon <- decomp$decomp
 weights <- df_bacon[order(-df_bacon$untreated, df_bacon$treat), "weight"]
 weights <- round(weights, 3)
 
