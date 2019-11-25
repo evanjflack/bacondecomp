@@ -46,12 +46,19 @@ bacon <- function(formula,
   colnames(data) <- c("id", "time", "outcome", "treated")
   # Check for NA observations
   nas <- sum(is.na(data))
-  if (nas > 0) stop("NA observations")
-
+  if (nas > 0) {
+    stop("NA observations")
+  }
   # Check for balanced panel
   bal <- stats::aggregate(time ~ id,  data = data, FUN = length)
   balanced <- ifelse(mean(bal$time == bal$time[1]) == 1, 1, 0)
-  if (!balanced) stop("Unbalanced Panel")
+  if (!balanced) {
+    stop("Unbalanced Panel")
+  }
+  # Check for binary treatment only
+  if (!(all(data$treated) %in% c(0, 1))) {
+    stop("Treatment variable can only take binary values 0 or 1")
+  }
 
   df_treat <- data[data$treated == 1, ]
   df_treat <- df_treat[, c("id", "time")]
