@@ -1,6 +1,8 @@
 # bacon
 
 ![](https://github.com/evanjflack/bacon/workflows/R-CMD-check/badge.svg)
+[![Travis build status](https://travis-ci.org/evanjflack/bacon.svg?branch=master)](https://travis-ci.org/evanjflack/bacon)
+[![Coverage status](https://codecov.io/gh/evanjflack/bacon/branch/master/graph/badge.svg)](https://codecov.io/github/evanjflack/bacon?branch=master)
 
 ## Overview
 
