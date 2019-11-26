@@ -3,6 +3,7 @@
 ![](https://github.com/evanjflack/bacon/workflows/R-CMD-check/badge.svg)
 [![Travis build status](https://travis-ci.org/evanjflack/bacon.svg?branch=master)](https://travis-ci.org/evanjflack/bacon)
 [![Coverage status](https://codecov.io/gh/evanjflack/bacon/branch/master/graph/badge.svg)](https://codecov.io/github/evanjflack/bacon?branch=master)
+[![Example Jupyter Notebook](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/evanjflack/bacon/master)
 
 ## Overview
 
