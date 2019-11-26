@@ -37,21 +37,24 @@ bacon <- function(formula,
                   id_var,
                   time_var,
                   quiet = FALSE) {
-  time <- NULL
   # Rename variables
   outcome_var <- as.character(formula)[2]
   treated_var <- as.character(formula)[3]
-
   data <- data[, c(id_var, time_var, outcome_var, treated_var)]
   colnames(data) <- c("id", "time", "outcome", "treated")
+
   # Check for NA observations
   nas <- sum(is.na(data))
-  if (nas > 0) stop("NA observations")
+  if (nas > 0) {
+    stop("NA observations")
+  }
 
   # Check for balanced panel
   bal <- stats::aggregate(time ~ id,  data = data, FUN = length)
   balanced <- ifelse(mean(bal$time == bal$time[1]) == 1, 1, 0)
-  if (!balanced) stop("Unbalanced Panel")
+  if (!balanced) {
+    stop("Unbalanced Panel")
+  }
 
   df_treat <- data[data$treated == 1, ]
   df_treat <- df_treat[, c("id", "time")]
@@ -91,7 +94,7 @@ bacon <- function(formula,
 
   # Rescale weights to 1
   total_weight <- sum(two_by_twos$weight)
-  two_by_twos$weight <- two_by_twos$weight/total_weight
+  two_by_twos$weight <- two_by_twos$weight / total_weight
   # Classify estimate type
   two_by_twos$type <- ifelse(two_by_twos$untreated == 99999,
                              "Treated vs Untreated",
@@ -139,30 +142,30 @@ calculate_weights <- function(data,
     # Treated vs untreated
     n_u <- sum(data$treat_time == untreated_group)
     n_k <- sum(data$treat_time == treated_group)
-    n_ku <- n_k/(n_k + n_u)
+    n_ku <- n_k / (n_k + n_u)
     D_k <- mean(data[data$treat_time == treated_group, "treated"])
-    V_ku <- n_ku*(1 - n_ku)*D_k*(1 - D_k)
-    weight1 <- (n_k + n_u)^2*V_ku
+    V_ku <- n_ku * (1 - n_ku) * D_k * (1 - D_k)
+    weight1 <- (n_k + n_u) ^ 2 * V_ku
   } else if (treated_group < untreated_group) {
     # early vs late (before late is treated)
     data <- data[data$time < untreated_group, ]
     n_k <- sum(data$treat_time == treated_group)
     n_l <- sum(data$treat_time == untreated_group)
-    n_kl <- n_k/(n_k + n_l)
+    n_kl <- n_k / (n_k + n_l)
     D_k <- mean(data[data$treat_time == treated_group, "treated"])
     D_l <- mean(data[data$treat_time == untreated_group, "treated"])
-    V_kl <- n_kl*(1 - n_kl)*(D_k - D_l)/(1 - D_l)*(1 - D_k)/(1 - D_l)
-    weight1 <- ((n_k + n_l)*(1 - D_l))^2*V_kl
+    V_kl <- n_kl * (1 - n_kl) * (D_k - D_l) / (1 - D_l) * (1 - D_k) / (1 - D_l)
+    weight1 <- ( (n_k + n_l) * (1 - D_l) ) ^ 2 * V_kl
   } else if (treated_group > untreated_group) {
     # late vs early (after early is treated)
     data <- data[data$time >= untreated_group, ]
     n_k <- sum(data$treat_time == untreated_group)
     n_l <- sum(data$treat_time == treated_group)
-    n_kl <- n_k/(n_k + n_l)
+    n_kl <- n_k / (n_k + n_l)
     D_k <- mean(data[data$treat_time == untreated_group, "treated"])
     D_l <- mean(data[data$treat_time == treated_group, "treated"])
-    V_kl <- n_kl*(1 - n_kl)*(D_l/D_k)*(D_k - D_l)/(D_k)
-    weight1 <- ((n_k + n_l)*D_k)^2*V_kl
+    V_kl <- n_kl * (1 - n_kl) * (D_l / D_k) * (D_k - D_l) / (D_k)
+    weight1 <- ( (n_k + n_l) * D_k) ^ 2 * V_kl
   }
   return(weight1)
 }
