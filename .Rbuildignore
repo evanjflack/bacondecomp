@@ -4,3 +4,5 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^\.github$
+^install.R$
+^runtime.txt$
