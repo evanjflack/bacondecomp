@@ -8,8 +8,6 @@
 #' @param data a data.frame containing the variables in the model.
 #' @param id_var character, the name of id variable for units.
 #' @param time_var character, the name of time variable.
-#' @param quiet logical, if TRUE does not print overal two-way fixed effects
-#'  estimate or summary of 2x2 estimates by type.
 #'
 #' @author Evan Flack
 #' @return data.frame of all 2x2 estimates and weights
@@ -34,15 +32,14 @@
 #' @export
 
 data <- bacon::castle
-formula <- l_homicide ~ post + l_pop
+formula <- l_homicide ~ post
 id_var <- "state"
 time_var <- "year"
 
 bacon <- function(formula,
                   data,
                   id_var,
-                  time_var,
-                  quiet = FALSE) {
+                  time_var) {
   
   # Rename variables
   outcome_var <- as.character(formula)[2]
@@ -89,50 +86,40 @@ bacon <- function(formula,
   two_by_twos <- two_by_twos[!(two_by_twos$treated == first_period), ]
   two_by_twos[, c("estimate", "weight")] <- 0
 
-  for (i in 1:nrow(two_by_twos)) {
-    treated_group <- two_by_twos[i, "treated"]
-    untreated_group <- two_by_twos[i, "untreated"]
-    data1 <- data[data$treat_time %in% c(treated_group, untreated_group), ]
-
-    weight1 <- calculate_weights(data = data1,
-                                 treated_group = treated_group,
-                                 untreated_group = untreated_group)
-
-    # Estimate 2x2 diff-in-diff
-    estimate1 <- stats::lm(outcome ~ treated + factor(time) + factor(id),
-                   data = data1)$coefficients[2]
-
-    two_by_twos[i, "estimate"] <- estimate1
-    two_by_twos[i, "weight"] <- weight1
+  
+  # Unncontrolled
+  if (length(control_vars == 0)) {
+    for (i in 1:nrow(two_by_twos)) {
+      treated_group <- two_by_twos[i, "treated"]
+      untreated_group <- two_by_twos[i, "untreated"]
+      data1 <- data[data$treat_time %in% c(treated_group, untreated_group), ]
+      
+      weight1 <- calculate_weights(data = data1,
+                                   treated_group = treated_group,
+                                   untreated_group = untreated_group)
+      
+      # Estimate 2x2 diff-in-diff
+      estimate1 <- stats::lm(outcome ~ treated + factor(time) + factor(id),
+                             data = data1)$coefficients[2]
+      
+      two_by_twos[i, "estimate"] <- estimate1
+      two_by_twos[i, "weight"] <- weight1
+    }
+    
+    # Rescale weights to 1
+    total_weight <- sum(two_by_twos$weight)
+    two_by_twos$weight <- two_by_twos$weight / total_weight
+    # Classify estimate type
+    two_by_twos$type <- ifelse(two_by_twos$untreated == 99999,
+                               "Treated vs Untreated",
+                               ifelse(two_by_twos$untreated == first_period,
+                                      "Always Treated vs Later Treated",
+                                      ifelse(two_by_twos$treated <
+                                               two_by_twos$untreated,
+                                             "Early vs Late", "Late vs Early")))
+    return(two_by_twos)
   }
 
-  # Rescale weights to 1
-  total_weight <- sum(two_by_twos$weight)
-  two_by_twos$weight <- two_by_twos$weight / total_weight
-  # Classify estimate type
-  two_by_twos$type <- ifelse(two_by_twos$untreated == 99999,
-                             "Treated vs Untreated",
-                             ifelse(two_by_twos$untreated == first_period,
-                                    "Always Treated vs Later Treated",
-                                    ifelse(two_by_twos$treated <
-                                             two_by_twos$untreated,
-                                           "Early vs Late", "Late vs Early")))
-
-  # Print two-way FE estimate and summary of 2x2 estimates by type
-  if (quiet == F) {
-    # Print two way FE estimate
-    overall_est <- stats::weighted.mean(two_by_twos$estimate,
-                                        two_by_twos$weight)
-    print(paste0("Two-way FE estimate = ", overall_est))
-
-    # print summary of 2x2 estimates by type
-    avg_est <- stats::aggregate(estimate ~ type, data = two_by_twos, FUN = mean)
-    colnames(avg_est) <- c("type", "avg_estimate")
-    sum_weight <- stats::aggregate(weight ~ type, data = two_by_twos, FUN = sum)
-    avg_est_weight <- merge(avg_est, sum_weight, by = "type")
-    print(avg_est_weight)
-  }
-  return(two_by_twos)
 }
 
 #' Calculate Weights for 2x2 Grid
