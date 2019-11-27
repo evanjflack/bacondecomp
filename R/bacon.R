@@ -32,7 +32,7 @@
 #' @export
 
 data <- bacon::castle
-formula <- l_homicide ~ post
+formula <- l_homicide ~ post + l_pop + l_income
 id_var <- "state"
 time_var <- "year"
 
@@ -47,7 +47,7 @@ bacon <- function(formula,
   right_side_vars <- strsplit(right_side_vars, " \\+ ")[[1]]
   treated_var <- right_side_vars[1]
   control_vars <- right_side_vars[-1]
-
+  
   colnames(data)[which(colnames(data) %in%
                    c(id_var, 
                      time_var, 
@@ -95,14 +95,17 @@ bacon <- function(formula,
   two_by_twos <- two_by_twos[!(two_by_twos$treated == first_period), ]
   two_by_twos[, c("estimate", "weight")] <- 0
 
-<<<<<<< HEAD
-  
-  # Unncontrolled
+  # Uncontrolled ---------------------------------------------------------------
   if (length(control_vars == 0)) {
     for (i in 1:nrow(two_by_twos)) {
       treated_group <- two_by_twos[i, "treated"]
       untreated_group <- two_by_twos[i, "untreated"]
       data1 <- data[data$treat_time %in% c(treated_group, untreated_group), ]
+      if (treated_group < untreated_group) {
+        data1 <- data1[data1$time < untreated_group, ]
+      } else if (treated_group > untreated_group) {
+        data1 <- data1[data1$time >= untreated_group, ]
+      }
       
       weight1 <- calculate_weights(data = data1,
                                    treated_group = treated_group,
@@ -115,43 +118,41 @@ bacon <- function(formula,
       two_by_twos[i, "estimate"] <- estimate1
       two_by_twos[i, "weight"] <- weight1
     }
-    
-    # Rescale weights to 1
-    total_weight <- sum(two_by_twos$weight)
-    two_by_twos$weight <- two_by_twos$weight / total_weight
-    # Classify estimate type
-    two_by_twos$type <- ifelse(two_by_twos$untreated == 99999,
-                               "Treated vs Untreated",
-                               ifelse(two_by_twos$untreated == first_period,
-                                      "Always Treated vs Later Treated",
-                                      ifelse(two_by_twos$treated <
-                                               two_by_twos$untreated,
-                                             "Early vs Late", "Late vs Early")))
     return(two_by_twos)
-=======
-  for (i in 1:nrow(two_by_twos)) {
-    treated_group <- two_by_twos[i, "treated"]
-    untreated_group <- two_by_twos[i, "untreated"]
-    data1 <- data[data$treat_time %in% c(treated_group, untreated_group), ]
-    if (treated_group < untreated_group) {
-      data1 <- data1[data1$time < untreated_group, ]
-    } else if (treated_group > untreated_group) {
-      data1 <- data1[data1$time >= untreated_group, ]
+  } else if (length(control_vars > 0)) {
+    two_by_twos$B_p <- 0
+    two_by_twos$B_2 <- 0
+    control_formula <- paste(control_vars, collapse = " + ")
+    control_formula <- paste("treated ~", control_formula)
+    control_formula <- as.formula(control_formula)
+    
+    data$pred_treat <- predict_treatment(control_formula, data)
+    p_bar <- aggregate(pred_treat ~ time + treat_time, data = data, 
+                       FUN = mean)
+    colnames(p_bar)[3] <- "p_bar"
+    y_bar <- aggregate(outcome ~ time + treat_time, data = data, 
+                       FUN = mean)
+    colnames(y_bar)[3] <- "y_bar"
+    data <- merge(data, p_bar, by = c("time", "treat_time"))
+    data <- merge(data, y_bar, by = c("time", "treat_time"))
+    
+    for (i in 1:nrow(two_by_twos)) {
+      treated_group <- two_by_twos[i, "treated"]
+      untreated_group <- two_by_twos[i, "untreated"]
+      data1 <- data[data$treat_time %in% c(treated_group, untreated_group), ]
+      if (treated_group < untreated_group) {
+        data1 <- data1[data1$time < untreated_group, ]
+      } else if (treated_group > untreated_group) {
+        data1 <- data1[data1$time >= untreated_group, ]
+      }
+      
+      fit_2 <- lm(outcome ~ treated + factor(id) + factor(time), data = data1)
+      two_by_twos[i, "B_2"] <- fit_2$coefficients["treated"]
+      
+      fit_p <- lm(y_bar ~ p_bar + factor(id) + factor(time), data = data1)
+      two_by_twos[i, "B_p"] <- fit_p$coefficients["p_bar"]
     }
-
-    weight1 <- calculate_weights(data = data1,
-                                 treated_group = treated_group,
-                                 untreated_group = untreated_group)
-
-    # Estimate 2x2 diff-in-diff
-    estimate1 <- stats::lm(outcome ~ treated + factor(time) + factor(id),
-                   data = data1)$coefficients[2]
-
-    two_by_twos[i, "estimate"] <- estimate1
-    two_by_twos[i, "weight"] <- weight1
->>>>>>> time_check
   }
-
 }
 
 #' Calculate Weights for 2x2 Grid
@@ -200,3 +201,11 @@ calculate_weights <- function(data,
   }
   return(weight1)
 }
+
+# Function to predict treatment status with covariates
+predict_treatment <- function(formula, data) {
+  fit <- lm(control_formula, data = data)
+  predict(fit)
+}
+
+
