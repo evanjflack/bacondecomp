@@ -23,3 +23,14 @@ test_that("NA error", {
                      id_var = "state",
                      time_var = "year"), "NA observations")
 })
+
+# Weakly Increasing Treatment
+castle <- bacon::castle
+castle[castle$state == "Alabama" & castle$year == 2009, "post"] <- 0
+test_that("Weakly Increasing Treatment", {
+  expect_error(bacon(l_homicide ~ post,
+                     data = castle,
+                     id_var = "state",
+                     time_var = "year"), 
+               "Treatment not weakly increasing with time")
+})
