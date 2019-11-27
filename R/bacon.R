@@ -88,6 +88,11 @@ bacon <- function(formula,
     treated_group <- two_by_twos[i, "treated"]
     untreated_group <- two_by_twos[i, "untreated"]
     data1 <- data[data$treat_time %in% c(treated_group, untreated_group), ]
+    if (treated_group < untreated_group) {
+      data1 <- data1[data1$time < untreated_group, ]
+    } else if (treated_group > untreated_group) {
+      data1 <- data1[data1$time >= untreated_group, ]
+    }
 
     weight1 <- calculate_weights(data = data1,
                                  treated_group = treated_group,
@@ -157,7 +162,6 @@ calculate_weights <- function(data,
     weight1 <- (n_k + n_u) ^ 2 * V_ku
   } else if (treated_group < untreated_group) {
     # early vs late (before late is treated)
-    data <- data[data$time < untreated_group, ]
     n_k <- sum(data$treat_time == treated_group)
     n_l <- sum(data$treat_time == untreated_group)
     n_kl <- n_k / (n_k + n_l)
@@ -167,7 +171,6 @@ calculate_weights <- function(data,
     weight1 <- ( (n_k + n_l) * (1 - D_l) ) ^ 2 * V_kl
   } else if (treated_group > untreated_group) {
     # late vs early (after early is treated)
-    data <- data[data$time >= untreated_group, ]
     n_k <- sum(data$treat_time == untreated_group)
     n_l <- sum(data$treat_time == treated_group)
     n_kl <- n_k / (n_k + n_l)
