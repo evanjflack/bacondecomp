@@ -32,19 +32,33 @@
 #'
 #'
 #' @export
+
+data <- bacon::castle
+formula <- l_homicide ~ post + l_pop
+id_var <- "state"
+time_var <- "year"
+
 bacon <- function(formula,
                   data,
                   id_var,
                   time_var,
                   quiet = FALSE) {
+  
   # Rename variables
   outcome_var <- as.character(formula)[2]
-  treated_var <- as.character(formula)[3]
-  data <- data[, c(id_var, time_var, outcome_var, treated_var)]
-  colnames(data) <- c("id", "time", "outcome", "treated")
+  right_side_vars <- as.character(formula)[3]
+  right_side_vars <- strsplit(right_side_vars, " \\+ ")[[1]]
+  treated_var <- right_side_vars[1]
+  control_vars <- right_side_vars[-1]
 
+  colnames(data)[which(colnames(data) %in%
+                   c(id_var, 
+                     time_var, 
+                     outcome_var, 
+                     treated_var))] <- c("id", "time", "outcome", "treated")
+  
   # Check for NA observations
-  nas <- sum(is.na(data))
+  nas <- sum(is.na(data[, c("id", "time", "outcome", "treated", control_vars)]))
   if (nas > 0) {
     stop("NA observations")
   }
