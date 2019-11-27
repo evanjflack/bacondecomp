@@ -62,18 +62,27 @@ bacon <- function(formula,
 
   # Check for balanced panel
   bal <- stats::aggregate(time ~ id,  data = data, FUN = length)
-  balanced <- ifelse(mean(bal$time == bal$time[1]) == 1, 1, 0)
+  balanced <- ifelse(all(bal$time == bal$time[1]), 1, 0)
   if (!balanced) {
     stop("Unbalanced Panel")
   }
-
+  
   df_treat <- data[data$treated == 1, ]
   df_treat <- df_treat[, c("id", "time")]
   df_treat <- stats::aggregate(time ~ id,  data = df_treat, FUN = min)
   colnames(df_treat) <- c("id", "treat_time")
   data <- merge(data, df_treat, by = "id", all.x = T)
   data[is.na(data$treat_time), "treat_time"] <- 99999
-
+  
+  # Check for weakly increasing treatment
+  inc <- ifelse(data$treat_time == 99999, 1, 
+                ifelse(data$time >= data$treat_time & data$treated == 1, 1, 
+                       ifelse(data$time < data$treat_time & data$treated == 0, 
+                              1, 0)))
+  if (!all(as.logical(inc))) {
+    stop("Treatment not weakly increasing with time")
+  }
+  
   # First period in the panel
   first_period <- min(data$time)
 
@@ -86,6 +95,7 @@ bacon <- function(formula,
   two_by_twos <- two_by_twos[!(two_by_twos$treated == first_period), ]
   two_by_twos[, c("estimate", "weight")] <- 0
 
+<<<<<<< HEAD
   
   # Unncontrolled
   if (length(control_vars == 0)) {
@@ -118,6 +128,28 @@ bacon <- function(formula,
                                                two_by_twos$untreated,
                                              "Early vs Late", "Late vs Early")))
     return(two_by_twos)
+=======
+  for (i in 1:nrow(two_by_twos)) {
+    treated_group <- two_by_twos[i, "treated"]
+    untreated_group <- two_by_twos[i, "untreated"]
+    data1 <- data[data$treat_time %in% c(treated_group, untreated_group), ]
+    if (treated_group < untreated_group) {
+      data1 <- data1[data1$time < untreated_group, ]
+    } else if (treated_group > untreated_group) {
+      data1 <- data1[data1$time >= untreated_group, ]
+    }
+
+    weight1 <- calculate_weights(data = data1,
+                                 treated_group = treated_group,
+                                 untreated_group = untreated_group)
+
+    # Estimate 2x2 diff-in-diff
+    estimate1 <- stats::lm(outcome ~ treated + factor(time) + factor(id),
+                   data = data1)$coefficients[2]
+
+    two_by_twos[i, "estimate"] <- estimate1
+    two_by_twos[i, "weight"] <- weight1
+>>>>>>> time_check
   }
 
 }
@@ -149,7 +181,6 @@ calculate_weights <- function(data,
     weight1 <- (n_k + n_u) ^ 2 * V_ku
   } else if (treated_group < untreated_group) {
     # early vs late (before late is treated)
-    data <- data[data$time < untreated_group, ]
     n_k <- sum(data$treat_time == treated_group)
     n_l <- sum(data$treat_time == untreated_group)
     n_kl <- n_k / (n_k + n_l)
@@ -159,7 +190,6 @@ calculate_weights <- function(data,
     weight1 <- ( (n_k + n_l) * (1 - D_l) ) ^ 2 * V_kl
   } else if (treated_group > untreated_group) {
     # late vs early (after early is treated)
-    data <- data[data$time >= untreated_group, ]
     n_k <- sum(data$treat_time == untreated_group)
     n_l <- sum(data$treat_time == treated_group)
     n_kl <- n_k / (n_k + n_l)
