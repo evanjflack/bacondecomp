@@ -51,18 +51,27 @@ bacon <- function(formula,
 
   # Check for balanced panel
   bal <- stats::aggregate(time ~ id,  data = data, FUN = length)
-  balanced <- ifelse(mean(bal$time == bal$time[1]) == 1, 1, 0)
+  balanced <- ifelse(all(bal$time == bal$time[1]), 1, 0)
   if (!balanced) {
     stop("Unbalanced Panel")
   }
-
+  
   df_treat <- data[data$treated == 1, ]
   df_treat <- df_treat[, c("id", "time")]
   df_treat <- stats::aggregate(time ~ id,  data = df_treat, FUN = min)
   colnames(df_treat) <- c("id", "treat_time")
   data <- merge(data, df_treat, by = "id", all.x = T)
   data[is.na(data$treat_time), "treat_time"] <- 99999
-
+  
+  # Check for weakly increasing treatment
+  inc <- ifelse(data$treat_time == 99999, 1, 
+                ifelse(data$time >= data$treat_time & data$treated == 1, 1, 
+                       ifelse(data$time < data$treat_time & data$treated == 0, 
+                              1, 0)))
+  if (!all(as.logical(inc))) {
+    stop("Treatment not weakly increasing with time")
+  }
+  
   # First period in the panel
   first_period <- min(data$time)
 
