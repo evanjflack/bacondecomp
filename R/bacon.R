@@ -120,6 +120,8 @@ bacon <- function(formula,
     }
     return(two_by_twos)
   } else if (length(control_vars > 0)) {
+    
+    # Controled ----------------------------------------------------------------
     two_by_twos$B_p <- 0
     two_by_twos$B_2 <- 0
     control_formula <- paste(control_vars, collapse = " + ")
@@ -127,8 +129,18 @@ bacon <- function(formula,
     control_formula <- as.formula(control_formula)
     
     data$pred_treat <- predict_treatment(control_formula, data)
+    data$resid_treat <- data$treated - data$pred_treat
+    
+    # Calculate Omega (weight to within estimate)
+    aov <- anova(lm(data$resid_treat ~ factor(data$treat_time)))
+    omega <- aov$`Sum Sq`[2]/sum(aov$`Sum Sq`)
+    
+    
+    
+    
     p_bar <- aggregate(pred_treat ~ time + treat_time, data = data, 
                        FUN = mean)
+    
     colnames(p_bar)[3] <- "p_bar"
     y_bar <- aggregate(outcome ~ time + treat_time, data = data, 
                        FUN = mean)
@@ -206,6 +218,10 @@ calculate_weights <- function(data,
 predict_treatment <- function(formula, data) {
   fit <- lm(control_formula, data = data)
   predict(fit)
+}
+
+calc_witin_var <- function(resid, groups) {
+  
 }
 
 
