@@ -32,10 +32,3 @@ test_that("Table 1 col 1 Stevenson and Wolfers  Replicates",
               stevenson_wolfson_replicates
             )
           })
-
-test_that("Table 1 col 1 Average Replicates", {
-  expect_equal(
-    our_model_input,
-    -9.7
-  )
-})
