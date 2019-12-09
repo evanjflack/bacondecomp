@@ -40,3 +40,17 @@ test_that("Multivariate bacon returns working object", {
   expect_true(ncol(ddf_bacon_multivariate) > 0)
 })
 
+# Weighted sum
+two_way_bacon_multivariate_coef <- sum(df_bacon_multivariate$estimate * df_bacon$weight)
+
+
+# Two way FE
+two_way_fe_multi <- lm(l_homicide ~ post + income + police + factor(state) + factor(year),
+                 data = bacon::castle)
+two_way_fe_coef_multi <- two_way_fe_multi$coefficients["post"]
+names(two_way_fe_coef_multi) <- NULL
+
+test_that("Two Way FE multi recovered", {
+  expect_equal(two_way_bacon_coef_multi, two_way_fe_coef_multi)
+})
+
