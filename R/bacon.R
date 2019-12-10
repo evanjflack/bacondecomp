@@ -55,35 +55,13 @@ bacon <- function(formula,
   if (!balanced) {
     stop("Unbalanced Panel")
   }
+  # Create grid of treatment groups
+  treatment_group_calc <- create_treatment_groups(data,
+                                                  return_merged_df = TRUE)
+  two_by_twos <- treatment_group_calc$two_by_twos
+  data <- treatment_group_calc$data 
   
-  df_treat <- data[data$treated == 1, ]
-  df_treat <- df_treat[, c("id", "time")]
-  df_treat <- stats::aggregate(time ~ id,  data = df_treat, FUN = min)
-  colnames(df_treat) <- c("id", "treat_time")
-  data <- merge(data, df_treat, by = "id", all.x = T)
-  data[is.na(data$treat_time), "treat_time"] <- 99999
   
-  # Check for weakly increasing treatment
-  inc <- ifelse(data$treat_time == 99999, 1, 
-                ifelse(data$time >= data$treat_time & data$treated == 1, 1, 
-                       ifelse(data$time < data$treat_time & data$treated == 0, 
-                              1, 0)))
-  if (!all(as.logical(inc))) {
-    stop("Treatment not weakly increasing with time")
-  }
-  
-  # First period in the panel
-  first_period <- min(data$time)
-
-  # create data.frame of all posible 2x2 estimates
-  two_by_twos <- expand.grid(unique(data$treat_time),
-                             unique(data$treat_time))
-  colnames(two_by_twos) <- c("treated", "untreated")
-  two_by_twos <- two_by_twos[!(two_by_twos$treated == two_by_twos$untreated), ]
-  two_by_twos <- two_by_twos[!(two_by_twos$treated == 99999), ]
-  two_by_twos <- two_by_twos[!(two_by_twos$treated == first_period), ]
-  two_by_twos[, c("estimate", "weight")] <- 0
-
   for (i in 1:nrow(two_by_twos)) {
     treated_group <- two_by_twos[i, "treated"]
     untreated_group <- two_by_twos[i, "untreated"]
@@ -107,7 +85,7 @@ bacon <- function(formula,
   # Classify estimate type
   two_by_twos$type <- ifelse(two_by_twos$untreated == 99999,
                              "Treated vs Untreated",
-                             ifelse(two_by_twos$untreated == first_period,
+                             ifelse(two_by_twos$untreated == min(data$time),
                                     "Always Treated vs Later Treated",
                                     ifelse(two_by_twos$treated <
                                              two_by_twos$untreated,
@@ -129,6 +107,54 @@ bacon <- function(formula,
   }
   return(two_by_twos)
 }
+
+
+#' Create Grid of Treatment Groups 
+#'
+#' @param data dataset used to create groups - MUST obey naming convention used
+#' in `bacon()`. i.e. columns are ["id", "time", "outcome", "treated"]
+#' @param return_merged_df Defaults to `FALSE` whether to return merged data
+#' as well as grid of treatment groups.
+#'
+#' @return data.frame describing treatment groups and empty weight and estimate
+#' column set to 0.
+create_treatment_groups <- function(data, return_merged_df = FALSE){
+  df_treat <- data[data$treated == 1, ]
+  df_treat <- df_treat[, c("id", "time")]
+  df_treat <- stats::aggregate(time ~ id,  data = df_treat, FUN = min)
+  colnames(df_treat) <- c("id", "treat_time")
+  data <- merge(data, df_treat, by = "id", all.x = T)
+  data[is.na(data$treat_time), "treat_time"] <- 99999
+  
+  # Check for weakly increasing treatment
+  inc <- ifelse(data$treat_time == 99999, 1, 
+                ifelse(data$time >= data$treat_time & data$treated == 1, 1, 
+                       ifelse(data$time < data$treat_time & data$treated == 0, 
+                              1, 0)))
+  if (!all(as.logical(inc))) {
+    stop("Treatment not weakly increasing with time")
+  }
+  # create data.frame of all posible 2x2 estimates
+  two_by_twos <- expand.grid(unique(data$treat_time),
+                             unique(data$treat_time))
+  colnames(two_by_twos) <- c("treated", "untreated")
+  two_by_twos <- two_by_twos[!(two_by_twos$treated == two_by_twos$untreated), ]
+  two_by_twos <- two_by_twos[!(two_by_twos$treated == 99999), ]
+  # Remove first period
+  two_by_twos <- two_by_twos[!(two_by_twos$treated == min(data$time)), ]
+  two_by_twos[, c("estimate", "weight")] <- 0
+
+  
+  # Whether or not to return the merged data too.  
+  if (return_merged_df == TRUE) {
+    return_data <- list("two_by_twos" = two_by_twos,
+                     "data" = data)   
+  } else {
+    return_data <- two_by_twos
+  }
+  return(return_data)
+}
+
 
 #' Calculate Weights for 2x2 Grid
 #'
