@@ -129,18 +129,14 @@ bacon <- function(formula,
     control_formula <- paste(control_vars, collapse = " + ")
     control_formula <- as.formula(paste("treated ~", control_formula))
     
-    dm_control_formula <- update(control_formula, . ~ . + 0 + factor(time) + factor(id))
-    fit_treat_dm <- lm(dm_control_formula, data = data)
-    data$d_it_til <- fit_treat_dm$residuals
-    
-    fit_treat <- lm(control_formula, data = data)
-    data$d_it <- fit_treat$residuals
-    
-    head(data$d_it)
-    head(data$d_it_til)
-    
-    calculate_Sigma <- function(data) {
-      # TODO Test that within + between = 1
+    calculate_ds <- function(data, control_formula) {
+      fit_treat <- lm(control_formula, data = data)
+      data$d_it <- fit_treat$residuals
+      
+      dm_control_formula <- update(control_formula, . ~ . + 0 + factor(time) + factor(id))
+      fit_treat_dm <- lm(dm_control_formula, data = data)
+      data$d_it_til <- fit_treat_dm$residuals
+      
       data$d_i_bar <- ave(data$d_it, data$id)
       data$d_t_bar <- ave(data$d_it, data$time)
       data$d_bar_bar <- mean(data$d_it)
@@ -148,45 +144,26 @@ bacon <- function(formula,
       data$d_k_bar <- ave(data$d_it, data$treat_time)
       data$d_ikt_til <- data$d_it - data$d_i_bar - (data$d_kt_bar - data$d_k_bar)
       data$d_kt_til <- (data$d_kt_bar - data$d_k_bar) - (data$d_t_bar - data$d_bar_bar)
+      return(data)
+    }
+    
+    calculate_Sigma <- function(data) {
+      # TODO Test that within + between = 1
+      
       
       Sigma <- var(data$d_ikt_til)/var(data$d_it_til)
       return(Sigma)
     }
     
-    
-
-
-  
-    
-    # demean
-    for (i in c(control_vars, "treated", "outcome")) {
-      data[, paste0("dm_", i)] = unlist(data[, i]) - ave(unlist(data[, i]), data$id, FUN = mean) - ave(unlist(data[, i]), data$time, FUN = mean) + mean(unlist(data[, i]))
+    calculate_beta_hat_w <- function(data) {
+      # TODO test equation 25
+      beta_hat_w <- cov(data$outcome, data$d_ikt_til)/var(data$d_ikt_til)
+      return(beta_hat_w)
     }
-    
-    fit_til1 <- lm(dm_treated ~ dm_l_income + dm_l_pop, data = data)
-    data$d_it_til <- fit_til1$residuals
-    
-    data$d_i_bar <- ave(data$d_it, data$id)
-    data$d_t_bar <- ave(data$d_it, data$time)
-    
-    data$d_it_til1 <- data$d_it - data$d_i_bar - data$d_t_bar
-    
   
-    lm(dm_outcome ~ d_it_til1, data = data)
-    
-    # Calculate Omega (weight to within estimate)
-    aov <- anova(lm(data$resid_treat ~ factor(data$treat_time)))
-    omega <- aov$`Sum Sq`[2]/sum(aov$`Sum Sq`)
-    
-    p_bar <- aggregate(pred_treat ~ time + treat_time, data = data, 
-                       FUN = mean)
-    
-    colnames(p_bar)[3] <- "p_bar"
-    y_bar <- aggregate(outcome ~ time + treat_time, data = data, 
-                       FUN = mean)
-    colnames(y_bar)[3] <- "y_bar"
-    data <- merge(data, p_bar, by = c("time", "treat_time"))
-    data <- merge(data, y_bar, by = c("time", "treat_time"))
+    data <- calculate_ds(data, control_formula)
+    Sigma <- calculate_Sigma(data)
+    beta_hat_w <- calculate_beta_hat_w(data)
     
     for (i in 1:nrow(two_by_twos)) {
       treated_group <- two_by_twos[i, "treated"]
@@ -198,13 +175,16 @@ bacon <- function(formula,
         data1 <- data1[data1$time >= untreated_group, ]
       }
       
-      fit_2 <- lm(outcome ~ treated + factor(id) + factor(time), data = data1)
-      two_by_twos[i, "B_2"] <- fit_2$coefficients["treated"]
+      skl <- calculate_weights_controled(data1, treated_group, untreated_group)
       
-      fit_p <- lm(y_bar ~ p_bar + factor(id) + factor(time), data = data1)
-      two_by_twos[i, "B_p"] <- fit_p$coefficients["p_bar"]
     }
   }
+}
+
+
+calculate_weights_controled <- function(data, treated_group, 
+                                        untreated_group) {
+  
 }
 
 #' Calculate Weights for 2x2 Grid
