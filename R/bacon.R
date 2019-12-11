@@ -124,18 +124,49 @@ bacon <- function(formula,
     # Controled ----------------------------------------------------------------
     two_by_twos$B_p <- 0
     two_by_twos$B_2 <- 0
-    control_formula <- paste(control_vars, collapse = " + ")
-    control_formula <- paste("treated ~", control_formula)
-    control_formula <- as.formula(control_formula)
     
-    data$pred_treat <- predict_treatment(control_formula, data)
-    data$resid_treat <- data$treated - data$pred_treat
+    # Predict Treatment
+    control_formula <- paste(control_vars, collapse = " + ")
+    control_formula <- as.formula(paste("treated ~", control_formula))
+    
+    fit_treat <- lm(treated ~ l_income + l_pop, data = data)
+    data$d_it <- fit_treat$residuals
+    
+    for (i in c(control_vars, "treated", "outcome")) {
+      data[, paste0("dm_", i)] = unlist(data[, i]) - ave(unlist(data[, i]), data$id, FUN = mean) - ave(unlist(data[, i]), data$time, FUN = mean) + mean(unlist(data[, i]))
+    }
+    
+    fit_til1 <- lm(dm_treated ~ dm_l_income + dm_l_pop, data = data)
+    data$d_it_til <- fit_til1$residuals
+    
+    data$d_i_bar <- ave(data$d_it, data$id)
+    data$d_t_bar <- ave(data$d_it, data$time)
+    
+    data$d_it_til1 <- data$d_it - data$d_i_bar - data$d_t_bar
+    
+  
+    lm(dm_outcome ~ d_it_til1, data = data)
+    
+
     
     # Calculate Omega (weight to within estimate)
     aov <- anova(lm(data$resid_treat ~ factor(data$treat_time)))
     omega <- aov$`Sum Sq`[2]/sum(aov$`Sum Sq`)
     
+    data %<>% 
+      group_by(time) %>% 
+      mutate(d_t_bar = mean(d_it))
     
+    data %<>% 
+      group_by(time, treat_time) %>% 
+      mutate(d_kt_bar = mean(d_it))
+    
+    data %<>% 
+      group_by(treat_time) %>% 
+      mutate(d_k_bar = mean(d_it))
+    
+    data %<>% 
+      mutate(d_bar_bar = mean(d_it))
     
     
     p_bar <- aggregate(pred_treat ~ time + treat_time, data = data, 
