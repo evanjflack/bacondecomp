@@ -129,9 +129,36 @@ bacon <- function(formula,
     control_formula <- paste(control_vars, collapse = " + ")
     control_formula <- as.formula(paste("treated ~", control_formula))
     
-    fit_treat <- lm(treated ~ l_income + l_pop, data = data)
+    dm_control_formula <- update(control_formula, . ~ . + 0 + factor(time) + factor(id))
+    fit_treat_dm <- lm(dm_control_formula, data = data)
+    data$d_it_til <- fit_treat_dm$residuals
+    
+    fit_treat <- lm(control_formula, data = data)
     data$d_it <- fit_treat$residuals
     
+    head(data$d_it)
+    head(data$d_it_til)
+    
+    calculate_Sigma <- function(data) {
+      # TODO Test that within + between = 1
+      data$d_i_bar <- ave(data$d_it, data$id)
+      data$d_t_bar <- ave(data$d_it, data$time)
+      data$d_bar_bar <- mean(data$d_it)
+      data$d_kt_bar <- ave(data$d_it, data$treat_time, data$time)
+      data$d_k_bar <- ave(data$d_it, data$treat_time)
+      data$d_ikt_til <- data$d_it - data$d_i_bar - (data$d_kt_bar - data$d_k_bar)
+      data$d_kt_til <- (data$d_kt_bar - data$d_k_bar) - (data$d_t_bar - data$d_bar_bar)
+      
+      Sigma <- var(data$d_ikt_til)/var(data$d_it_til)
+      return(Sigma)
+    }
+    
+    
+
+
+  
+    
+    # demean
     for (i in c(control_vars, "treated", "outcome")) {
       data[, paste0("dm_", i)] = unlist(data[, i]) - ave(unlist(data[, i]), data$id, FUN = mean) - ave(unlist(data[, i]), data$time, FUN = mean) + mean(unlist(data[, i]))
     }
@@ -147,27 +174,9 @@ bacon <- function(formula,
   
     lm(dm_outcome ~ d_it_til1, data = data)
     
-
-    
     # Calculate Omega (weight to within estimate)
     aov <- anova(lm(data$resid_treat ~ factor(data$treat_time)))
     omega <- aov$`Sum Sq`[2]/sum(aov$`Sum Sq`)
-    
-    data %<>% 
-      group_by(time) %>% 
-      mutate(d_t_bar = mean(d_it))
-    
-    data %<>% 
-      group_by(time, treat_time) %>% 
-      mutate(d_kt_bar = mean(d_it))
-    
-    data %<>% 
-      group_by(treat_time) %>% 
-      mutate(d_k_bar = mean(d_it))
-    
-    data %<>% 
-      mutate(d_bar_bar = mean(d_it))
-    
     
     p_bar <- aggregate(pred_treat ~ time + treat_time, data = data, 
                        FUN = mean)
