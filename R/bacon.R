@@ -265,7 +265,7 @@ calculate_ds <- function(data, control_formula) {
 
 calculate_Sigma <- function(data) {
   # TODO Test that within + between = 1
-  N <- ncol(data)
+  N <- nrow(data)
   V_wd <- var(data$d_ikt_til)*(N - 1)/N
   V_d <- var(data$d_it_til)*(N - 1)/N
   Sigma <- V_wd/V_d
@@ -273,7 +273,7 @@ calculate_Sigma <- function(data) {
 }
 
 calculate_one_minus_Sigma <- function(data) {
-  N <- ncol(data)
+  N <- nrow(data)
   V_db <- var(data$d_kt_til)*(N - 1)/N
   V_d <- var(data$d_it_til)*(N - 1)/N
   one_minus_Sigma <- V_db/V_d
