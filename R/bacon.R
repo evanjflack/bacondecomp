@@ -122,49 +122,20 @@ bacon <- function(formula,
   } else if (length(control_vars > 0)) {
     
     # Controled ----------------------------------------------------------------
-    two_by_twos$B_p <- 0
-    two_by_twos$B_2 <- 0
-    
     # Predict Treatment
     control_formula <- paste(control_vars, collapse = " + ")
     control_formula <- as.formula(paste("treated ~", control_formula))
-    
-    calculate_ds <- function(data, control_formula) {
-      fit_treat <- lm(control_formula, data = data)
-      data$d_it <- fit_treat$residuals
-      
-      dm_control_formula <- update(control_formula, . ~ . + 0 + factor(time) + factor(id))
-      fit_treat_dm <- lm(dm_control_formula, data = data)
-      data$d_it_til <- fit_treat_dm$residuals
-      
-      data$d_i_bar <- ave(data$d_it, data$id)
-      data$d_t_bar <- ave(data$d_it, data$time)
-      data$d_bar_bar <- mean(data$d_it)
-      data$d_kt_bar <- ave(data$d_it, data$treat_time, data$time)
-      data$d_k_bar <- ave(data$d_it, data$treat_time)
-      data$d_ikt_til <- data$d_it - data$d_i_bar - (data$d_kt_bar - data$d_k_bar)
-      data$d_kt_til <- (data$d_kt_bar - data$d_k_bar) - (data$d_t_bar - data$d_bar_bar)
-      return(data)
-    }
-    
-    calculate_Sigma <- function(data) {
-      # TODO Test that within + between = 1
-      
-      Sigma <- var(data$d_ikt_til)/var(data$d_it_til)
-      return(Sigma)
-    }
-    
-    calculate_beta_hat_w <- function(data) {
-      # TODO test equation 25
-      beta_hat_w <- cov(data$outcome, data$d_ikt_til)/var(data$d_ikt_til)
-      return(beta_hat_w)
-    }
   
     data <- calculate_ds(data, control_formula)
     Sigma <- calculate_Sigma(data)
-    beta_hat_w <- calculate_beta_hat_w(data)
-    V_bd <- var(data$d_kt_til)
+    one_minus_Sigma <- calculate_one_minus_Sigma(data)
     
+    Sigma + one_minus_Sigma
+    
+    
+    beta_hat_w <- calculate_beta_hat_w(data)
+    N <- nrow(data)
+    V_bd <- var(data$d_kt_til)*(N - 1)/N
     
     for (i in 1:nrow(two_by_twos)) {
       treated_group <- two_by_twos[i, "treated"]
@@ -180,6 +151,52 @@ bacon <- function(formula,
                                          V_bd)
     }
   }
+}
+
+calculate_ds <- function(data, control_formula) {
+  fit_treat <- lm(control_formula, data = data)
+  data$d_it <- fit_treat$residuals
+  
+  # OLD WAY OF D_IT_TIL
+  # dm_control_formula <- update(control_formula, . ~ . + 0 + factor(time) + factor(id))
+  # fit_treat_dm <- lm(dm_control_formula, data = data)
+  # data$d_it_til <- fit_treat_dm$residuals
+  
+  data$d_it_til <- data$d_it - data$d_i_bar - data$d_t_bar + data$d_bar_bar
+  
+  data$d_i_bar <- ave(data$d_it, data$id)
+  data$d_t_bar <- ave(data$d_it, data$time)
+  data$d_bar_bar <- mean(data$d_it)
+  data$d_kt_bar <- ave(data$d_it, data$treat_time, data$time)
+  data$d_k_bar <- ave(data$d_it, data$treat_time)
+  data$d_ikt_til <- data$d_it - data$d_i_bar - (data$d_kt_bar - data$d_k_bar)
+  data$d_kt_til <- (data$d_kt_bar - data$d_k_bar) - (data$d_t_bar - data$d_bar_bar)
+
+  return(data)
+}
+
+calculate_Sigma <- function(data) {
+  # TODO Test that within + between = 1
+  N <- ncol(data)
+  V_dw <- var(data$d_ikt_til)*(N - 1)/N
+  V_d <- var(data$d_it_til)*(N - 1)/N
+  Sigma <- V_wd/V_d
+  return(Sigma)
+}
+
+calculate_one_minus_Sigma <- function(data) {
+  N <- ncol(data)
+  V_db <- var(data$d_kt_til)*(N - 1)/N
+  V_d <- var(data$d_it_til)*(N - 1)/N
+  one_minus_Sigma <- V_db/V_d
+  return(one_minus_Sigma)
+}
+
+calculate_beta_hat_w <- function(data) {
+  # TODO test equation 25
+  beta_hat_w <- cov(data$outcome, data$d_ikt_til)
+  V_d <- var(data$d_ikt_til)*(N - 1)/N
+  return(beta_hat_w)
 }
 
 
