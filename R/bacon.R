@@ -90,39 +90,29 @@ bacon <- function(formula,
       two_by_twos[i, "estimate"] <- estimate1
       two_by_twos[i, "weight"] <- weight1
     }
-    
-    library(ggplot2)
-    return(two_by_twos)
   } else if (length(control_vars > 0)) {
-
     # Controled ----------------------------------------------------------------
-    # Predict Treatment
+    # Predict Treatment and calulate demeaned residuals
     control_formula <- paste(control_vars, collapse = " + ")
     control_formula <- as.formula(paste("treated ~", control_formula))
-
     data <- calculate_ds(data, control_formula)
+    # Ca
     Sigma <- calculate_Sigma(data)
-    one_minus_Sigma <- calculate_one_minus_Sigma(data)
-
-    Sigma + one_minus_Sigma
-
-
+    # one_minus_Sigma <- calculate_one_minus_Sigma(data)
     beta_hat_w <- calculate_beta_hat_w(data)
+    
+    
+    
     N <- nrow(data)
     V_bd <- var(data$d_kt_til)*(N - 1)/N
-
+  
     for (i in 1:nrow(two_by_twos)) {
       treated_group <- two_by_twos[i, "treated"]
       untreated_group <- two_by_twos[i, "untreated"]
       data1 <- data[data$treat_time %in% c(treated_group, untreated_group), ]
-      if (treated_group < untreated_group) {
-        data1 <- data1[data1$time < untreated_group, ]
-      } else if (treated_group > untreated_group) {
-        data1 <- data1[data1$time >= untreated_group, ]
-      }
-
       skl <- calculate_weights_controled(data1, treated_group, untreated_group,
                                          V_bd)
+      two_by_twos[i, "weight"] <- skl
     }
   }
 }
@@ -254,24 +244,17 @@ calculate_weights <- function(data,
   return(weight1)
 }
 
-
-
-
-
 calculate_ds <- function(data, control_formula) {
+  # predict treatment
   fit_treat <- lm(control_formula, data = data)
+  # residulals
   data$d_it <- fit_treat$residuals
-
-  # OLD WAY OF D_IT_TIL
-  # dm_control_formula <- update(control_formula, . ~ . + 0 + factor(time) + factor(id))
-  # fit_treat_dm <- lm(dm_control_formula, data = data)
-  # data$d_it_til <- fit_treat_dm$residuals
-
-  data$d_it_til <- data$d_it - data$d_i_bar - data$d_t_bar + data$d_bar_bar
-
+  # demean residulas
   data$d_i_bar <- ave(data$d_it, data$id)
   data$d_t_bar <- ave(data$d_it, data$time)
   data$d_bar_bar <- mean(data$d_it)
+  data$d_it_til <- data$d_it - data$d_i_bar - data$d_t_bar + data$d_bar_bar
+
   data$d_kt_bar <- ave(data$d_it, data$treat_time, data$time)
   data$d_k_bar <- ave(data$d_it, data$treat_time)
   data$d_ikt_til <- data$d_it - data$d_i_bar - (data$d_kt_bar - data$d_k_bar)
@@ -280,12 +263,10 @@ calculate_ds <- function(data, control_formula) {
   return(data)
 }
 
-
-
 calculate_Sigma <- function(data) {
   # TODO Test that within + between = 1
   N <- ncol(data)
-  V_dw <- var(data$d_ikt_til)*(N - 1)/N
+  V_wd <- var(data$d_ikt_til)*(N - 1)/N
   V_d <- var(data$d_it_til)*(N - 1)/N
   Sigma <- V_wd/V_d
   return(Sigma)
@@ -301,8 +282,10 @@ calculate_one_minus_Sigma <- function(data) {
 
 calculate_beta_hat_w <- function(data) {
   # TODO test equation 25
-  beta_hat_w <- cov(data$outcome, data$d_ikt_til)
+  N <- nrow(data)
+  C <- cov(data$outcome, data$d_ikt_til)
   V_d <- var(data$d_ikt_til)*(N - 1)/N
+  beta_hat_w <- C/V_d
   return(beta_hat_w)
 }
 
@@ -310,41 +293,13 @@ calculate_beta_hat_w <- function(data) {
 calculate_weights_controled <- function(data, treated_group,
                                         untreated_group, V_db) {
   # TODO test: between 0-1? (ask him), and sum to 1
-  if (untreated_group == 99999) {
-    # Treated vs untreated
-    n_u <- sum(data$treat_time == untreated_group)
-    n_k <- sum(data$treat_time == treated_group)
-    V_bkl <- var(data$d_kt_til) # this is the V(d_kt) but only for these subgroups
-    s_kl <- (n_u + n_k)^2 * V_bkl/V_db
-
-  } else if (treated_group < untreated_group) {
-    # early vs late (before late is treated)
-    n_k <- sum(data$treat_time == treated_group)
-    n_l <- sum(data$treat_time == untreated_group)
-    V_bkl <- var(data$d_kt_til) # this is the V(d_kt) but only for these subgroups
-    s_kl <- (n_k + n_l)^2 * V_bkl/V_db
-  } else if (treated_group > untreated_group) {
-    # late vs early (after early is treated)
-    n_k <- sum(data$treat_time == untreated_group)
-    n_l <- sum(data$treat_time == treated_group)
-    V_bkl <- var(data$d_kt_til) # this is the V(d_kt) but only for these subgroups
-    s_kl <- (n_k + n_l)^2 * V_bkl/V_db
-  }
+  # Treated vs untreated
+  n_k <- sum(data$treat_time == untreated_group)
+  n_l <- sum(data$treat_time == treated_group)
+  N <- nrow(data)
+  V_bkl <- var(data$d_kt_til)*(N - 1)/N # this is the V(d_kt) but only for these subgroups
+  s_kl <- (n_k + n_l)^2 * V_bkl/V_db
   return(s_kl)
 }
 
 
-
-
-
-
-
-# Function to predict treatment status with covariates
-predict_treatment <- function(formula, data) {
-  fit <- lm(control_formula, data = data)
-  predict(fit)
-}
-
-calc_witin_var <- function(resid, groups) {
-
-}
