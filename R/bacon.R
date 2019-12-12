@@ -42,16 +42,13 @@ bacon <- function(formula,
                   id_var,
                   time_var) {
   
-  vars <- unpack_variables(formula)
+  vars <- unpack_variable_names(formula)
   outcome_var <- vars$outcome_var
   treated_var <- vars$treated_var
   control_vars <- vars$control_vars
+  
+  data <- rename_vars(data, id_var, time_var, outcome_var, treated_var)
 
-  colnames(data)[which(colnames(data) %in%
-                   c(id_var,
-                     time_var,
-                     outcome_var,
-                     treated_var))] <- c("id", "time", "outcome", "treated")
 
   # Check for NA observations
   nas <- sum(is.na(data[, c("id", "time", "outcome", "treated", control_vars)]))
@@ -71,43 +68,30 @@ bacon <- function(formula,
                                                   return_merged_df = TRUE)
   two_by_twos <- treatment_group_calc$two_by_twos
   data <- treatment_group_calc$data
-
-
+  
   # First period in the panel
   first_period <- min(data$time)
-
-  # create data.frame of all posible 2x2 estimates
-  two_by_twos <- expand.grid(unique(data$treat_time),
-                             unique(data$treat_time))
-  colnames(two_by_twos) <- c("treated", "untreated")
-  two_by_twos <- two_by_twos[!(two_by_twos$treated == two_by_twos$untreated), ]
-  two_by_twos <- two_by_twos[!(two_by_twos$treated == 99999), ]
-  two_by_twos <- two_by_twos[!(two_by_twos$treated == first_period), ]
-  two_by_twos[, c("estimate", "weight")] <- 0
 
   # Uncontrolled ---------------------------------------------------------------
   if (length(control_vars == 0)) {
     for (i in 1:nrow(two_by_twos)) {
       treated_group <- two_by_twos[i, "treated"]
       untreated_group <- two_by_twos[i, "untreated"]
-      data1 <- data[data$treat_time %in% c(treated_group, untreated_group), ]
-      if (treated_group < untreated_group) {
-        data1 <- data1[data1$time < untreated_group, ]
-      } else if (treated_group > untreated_group) {
-        data1 <- data1[data1$time >= untreated_group, ]
-      }
-
+      
+      data1 <- subset_data(data, treated_group, untreated_group)
+      
       weight1 <- calculate_weights(data = data1,
                                    treated_group = treated_group,
                                    untreated_group = untreated_group)
 
-      # Estimate 2x2 diff-in-diff
       estimate1 <- stats::lm(outcome ~ treated + factor(time) + factor(id),
                              data = data1)$coefficients[2]
 
       two_by_twos[i, "estimate"] <- estimate1
       two_by_twos[i, "weight"] <- weight1
     }
+    
+    library(ggplot2)
     return(two_by_twos)
   } else if (length(control_vars > 0)) {
 
@@ -157,6 +141,16 @@ unpack_variable_names <- function(formula) {
   return(r_list)
 }
 
+rename_vars <- function(data, id_var, time_var, outcome_var, treated_var) {
+  colnames(data)[which(colnames(data) %in%
+                         c(id_var,
+                           time_var,
+                           outcome_var,
+                           treated_var))] <- c("id", "time", "outcome", 
+                                               "treated")
+  return(data)
+}
+
 #' Create Grid of Treatment Groups
 #'
 #' @param data dataset used to create groups - MUST obey naming convention used
@@ -201,6 +195,63 @@ create_treatment_groups <- function(data, return_merged_df = FALSE){
     return_data <- two_by_twos
   }
   return(return_data)
+}
+
+subset_data <- function(data, treated_group, untreated_group) {
+  data <- data[data$treat_time %in% c(treated_group, untreated_group), ]
+  if (treated_group < untreated_group) {
+    data <- data[data$time < untreated_group, ]
+  } else if (treated_group > untreated_group) {
+    data <- data[data$time >= untreated_group, ]
+  }
+  return(data)
+}
+
+#' Calculate Weights for 2x2 Grid
+#'
+#'  Calculated weights using:
+#'  n_u - observations in untreated group,
+#'  n_k - observations in earlier treated group,
+#'  n_l - observations in later treated group,
+#'  D_k - proportion of time the earlier treated group was treated,
+#'  D_l - proportion of time the later treated group was treated.
+#'
+#' @param data a data.frame
+#' @param treated_group the identifier of the treated group
+#' @param untreated_group the identifier of the untreated group
+#'
+#' @return Scalar weight for 2x2 grid
+calculate_weights <- function(data,
+                              treated_group,
+                              untreated_group){
+  if (untreated_group == 99999) {
+    # Treated vs untreated
+    n_u <- sum(data$treat_time == untreated_group)
+    n_k <- sum(data$treat_time == treated_group)
+    n_ku <- n_k / (n_k + n_u)
+    D_k <- mean(data[data$treat_time == treated_group, "treated"])
+    V_ku <- n_ku * (1 - n_ku) * D_k * (1 - D_k)
+    weight1 <- (n_k + n_u) ^ 2 * V_ku
+  } else if (treated_group < untreated_group) {
+    # early vs late (before late is treated)
+    n_k <- sum(data$treat_time == treated_group)
+    n_l <- sum(data$treat_time == untreated_group)
+    n_kl <- n_k / (n_k + n_l)
+    D_k <- mean(data[data$treat_time == treated_group, "treated"])
+    D_l <- mean(data[data$treat_time == untreated_group, "treated"])
+    V_kl <- n_kl * (1 - n_kl) * (D_k - D_l) / (1 - D_l) * (1 - D_k) / (1 - D_l)
+    weight1 <- ( (n_k + n_l) * (1 - D_l) ) ^ 2 * V_kl
+  } else if (treated_group > untreated_group) {
+    # late vs early (after early is treated)
+    n_k <- sum(data$treat_time == untreated_group)
+    n_l <- sum(data$treat_time == treated_group)
+    n_kl <- n_k / (n_k + n_l)
+    D_k <- mean(data[data$treat_time == untreated_group, "treated"])
+    D_l <- mean(data[data$treat_time == treated_group, "treated"])
+    V_kl <- n_kl * (1 - n_kl) * (D_l / D_k) * (D_k - D_l) / (D_k)
+    weight1 <- ( (n_k + n_l) * D_k) ^ 2 * V_kl
+  }
+  return(weight1)
 }
 
 
@@ -286,52 +337,7 @@ calculate_weights_controled <- function(data, treated_group,
 
 
 
-#' Calculate Weights for 2x2 Grid
-#'
-#'  Calculated weights using:
-#'  n_u - observations in untreated group,
-#'  n_k - observations in earlier treated group,
-#'  n_l - observations in later treated group,
-#'  D_k - proportion of time the earlier treated group was treated,
-#'  D_l - proportion of time the later treated group was treated.
-#'
-#' @param data a data.frame
-#' @param treated_group the identifier of the treated group
-#' @param untreated_group the identifier of the untreated group
-#'
-#' @return Scalar weight for 2x2 grid
-calculate_weights <- function(data,
-                              treated_group,
-                              untreated_group){
-  if (untreated_group == 99999) {
-    # Treated vs untreated
-    n_u <- sum(data$treat_time == untreated_group)
-    n_k <- sum(data$treat_time == treated_group)
-    n_ku <- n_k / (n_k + n_u)
-    D_k <- mean(data[data$treat_time == treated_group, "treated"])
-    V_ku <- n_ku * (1 - n_ku) * D_k * (1 - D_k)
-    weight1 <- (n_k + n_u) ^ 2 * V_ku
-  } else if (treated_group < untreated_group) {
-    # early vs late (before late is treated)
-    n_k <- sum(data$treat_time == treated_group)
-    n_l <- sum(data$treat_time == untreated_group)
-    n_kl <- n_k / (n_k + n_l)
-    D_k <- mean(data[data$treat_time == treated_group, "treated"])
-    D_l <- mean(data[data$treat_time == untreated_group, "treated"])
-    V_kl <- n_kl * (1 - n_kl) * (D_k - D_l) / (1 - D_l) * (1 - D_k) / (1 - D_l)
-    weight1 <- ( (n_k + n_l) * (1 - D_l) ) ^ 2 * V_kl
-  } else if (treated_group > untreated_group) {
-    # late vs early (after early is treated)
-    n_k <- sum(data$treat_time == untreated_group)
-    n_l <- sum(data$treat_time == treated_group)
-    n_kl <- n_k / (n_k + n_l)
-    D_k <- mean(data[data$treat_time == untreated_group, "treated"])
-    D_l <- mean(data[data$treat_time == treated_group, "treated"])
-    V_kl <- n_kl * (1 - n_kl) * (D_l / D_k) * (D_k - D_l) / (D_k)
-    weight1 <- ( (n_k + n_l) * D_k) ^ 2 * V_kl
-  }
-  return(weight1)
-}
+
 
 # Function to predict treatment status with covariates
 predict_treatment <- function(formula, data) {
