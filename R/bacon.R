@@ -41,13 +41,11 @@ bacon <- function(formula,
                   data,
                   id_var,
                   time_var) {
-
-  # Rename variables
-  outcome_var <- as.character(formula)[2]
-  right_side_vars <- as.character(formula)[3]
-  right_side_vars <- strsplit(right_side_vars, " \\+ ")[[1]]
-  treated_var <- right_side_vars[1]
-  control_vars <- right_side_vars[-1]
+  
+  vars <- unpack_variables(formula)
+  outcome_var <- vars$outcome_var
+  treated_var <- vars$treated_var
+  control_vars <- vars$control_vars
 
   colnames(data)[which(colnames(data) %in%
                    c(id_var,
@@ -67,6 +65,7 @@ bacon <- function(formula,
   if (!balanced) {
     stop("Unbalanced Panel")
   }
+  
   # Create grid of treatment groups
   treatment_group_calc <- create_treatment_groups(data,
                                                   return_merged_df = TRUE)
@@ -144,6 +143,70 @@ bacon <- function(formula,
   }
 }
 
+#' Unpack variable names from formula
+#' 
+#' @param fomula
+unpack_variable_names <- function(formula) {
+  outcome_var <- as.character(formula)[2]
+  right_side_vars <- as.character(formula)[3]
+  right_side_vars <- strsplit(right_side_vars, " \\+ ")[[1]]
+  treated_var <- right_side_vars[1]
+  control_vars <- right_side_vars[-1]
+  r_list <- list(outcome_var = outcome_var, treated_var = treated_var, 
+                 control_vars = control_vars)
+  return(r_list)
+}
+
+#' Create Grid of Treatment Groups
+#'
+#' @param data dataset used to create groups - MUST obey naming convention used
+#' in `bacon()`. i.e. columns are ["id", "time", "outcome", "treated"]
+#' @param return_merged_df Defaults to `FALSE` whether to return merged data
+#' as well as grid of treatment groups.
+#'
+#' @return data.frame describing treatment groups and empty weight and estimate
+#' column set to 0.
+create_treatment_groups <- function(data, return_merged_df = FALSE){
+  df_treat <- data[data$treated == 1, ]
+  df_treat <- df_treat[, c("id", "time")]
+  df_treat <- stats::aggregate(time ~ id,  data = df_treat, FUN = min)
+  colnames(df_treat) <- c("id", "treat_time")
+  data <- merge(data, df_treat, by = "id", all.x = T)
+  data[is.na(data$treat_time), "treat_time"] <- 99999
+  
+  # Check for weakly increasing treatment
+  inc <- ifelse(data$treat_time == 99999, 1,
+                ifelse(data$time >= data$treat_time & data$treated == 1, 1,
+                       ifelse(data$time < data$treat_time & data$treated == 0,
+                              1, 0)))
+  if (!all(as.logical(inc))) {
+    stop("Treatment not weakly increasing with time")
+  }
+  # create data.frame of all posible 2x2 estimates
+  two_by_twos <- expand.grid(unique(data$treat_time),
+                             unique(data$treat_time))
+  colnames(two_by_twos) <- c("treated", "untreated")
+  two_by_twos <- two_by_twos[!(two_by_twos$treated == two_by_twos$untreated), ]
+  two_by_twos <- two_by_twos[!(two_by_twos$treated == 99999), ]
+  # Remove first period
+  two_by_twos <- two_by_twos[!(two_by_twos$treated == min(data$time)), ]
+  two_by_twos[, c("estimate", "weight")] <- 0
+  
+  
+  # Whether or not to return the merged data too.
+  if (return_merged_df == TRUE) {
+    return_data <- list("two_by_twos" = two_by_twos,
+                        "data" = data)
+  } else {
+    return_data <- two_by_twos
+  }
+  return(return_data)
+}
+
+
+
+
+
 calculate_ds <- function(data, control_formula) {
   fit_treat <- lm(control_formula, data = data)
   data$d_it <- fit_treat$residuals
@@ -165,6 +228,8 @@ calculate_ds <- function(data, control_formula) {
 
   return(data)
 }
+
+
 
 calculate_Sigma <- function(data) {
   # TODO Test that within + between = 1
@@ -218,51 +283,7 @@ calculate_weights_controled <- function(data, treated_group,
 }
 
 
-#' Create Grid of Treatment Groups
-#'
-#' @param data dataset used to create groups - MUST obey naming convention used
-#' in `bacon()`. i.e. columns are ["id", "time", "outcome", "treated"]
-#' @param return_merged_df Defaults to `FALSE` whether to return merged data
-#' as well as grid of treatment groups.
-#'
-#' @return data.frame describing treatment groups and empty weight and estimate
-#' column set to 0.
-create_treatment_groups <- function(data, return_merged_df = FALSE){
-  df_treat <- data[data$treated == 1, ]
-  df_treat <- df_treat[, c("id", "time")]
-  df_treat <- stats::aggregate(time ~ id,  data = df_treat, FUN = min)
-  colnames(df_treat) <- c("id", "treat_time")
-  data <- merge(data, df_treat, by = "id", all.x = T)
-  data[is.na(data$treat_time), "treat_time"] <- 99999
 
-  # Check for weakly increasing treatment
-  inc <- ifelse(data$treat_time == 99999, 1,
-                ifelse(data$time >= data$treat_time & data$treated == 1, 1,
-                       ifelse(data$time < data$treat_time & data$treated == 0,
-                              1, 0)))
-  if (!all(as.logical(inc))) {
-    stop("Treatment not weakly increasing with time")
-  }
-  # create data.frame of all posible 2x2 estimates
-  two_by_twos <- expand.grid(unique(data$treat_time),
-                             unique(data$treat_time))
-  colnames(two_by_twos) <- c("treated", "untreated")
-  two_by_twos <- two_by_twos[!(two_by_twos$treated == two_by_twos$untreated), ]
-  two_by_twos <- two_by_twos[!(two_by_twos$treated == 99999), ]
-  # Remove first period
-  two_by_twos <- two_by_twos[!(two_by_twos$treated == min(data$time)), ]
-  two_by_twos[, c("estimate", "weight")] <- 0
-
-
-  # Whether or not to return the merged data too.
-  if (return_merged_df == TRUE) {
-    return_data <- list("two_by_twos" = two_by_twos,
-                     "data" = data)
-  } else {
-    return_data <- two_by_twos
-  }
-  return(return_data)
-}
 
 
 #' Calculate Weights for 2x2 Grid
