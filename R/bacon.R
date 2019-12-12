@@ -112,14 +112,18 @@ bacon <- function(formula,
       data1 <- data[data$treat_time %in% c(treated_group, untreated_group), ]
       skl <- calculate_weights_controled(data1, treated_group, untreated_group,
                                          V_bd)
+      fit_2x2 <- lm(outcome ~ treated + factor(id) + factor(time), data = data1)
+      beta_2x2_kl <- fit_2x2$coefficients["treated"]
+      
+      
+      
+      
       two_by_twos[i, "weight"] <- skl
     }
   }
 }
 
-#' Unpack variable names from formula
-#' 
-#' @param fomula
+#' Unpack Variable Names from Formula
 unpack_variable_names <- function(formula) {
   outcome_var <- as.character(formula)[2]
   right_side_vars <- as.character(formula)[3]
@@ -131,6 +135,7 @@ unpack_variable_names <- function(formula) {
   return(r_list)
 }
 
+#' Rename Variables
 rename_vars <- function(data, id_var, time_var, outcome_var, treated_var) {
   colnames(data)[which(colnames(data) %in%
                          c(id_var,
@@ -244,6 +249,7 @@ calculate_weights <- function(data,
   return(weight1)
 }
 
+#' Calculate d_it and Variants
 calculate_ds <- function(data, control_formula) {
   # predict treatment
   fit_treat <- lm(control_formula, data = data)
@@ -263,6 +269,7 @@ calculate_ds <- function(data, control_formula) {
   return(data)
 }
 
+#' Calculate Sigma
 calculate_Sigma <- function(data) {
   # TODO Test that within + between = 1
   N <- ncol(data)
@@ -272,6 +279,7 @@ calculate_Sigma <- function(data) {
   return(Sigma)
 }
 
+#' Calculate 1 - Sigma
 calculate_one_minus_Sigma <- function(data) {
   N <- ncol(data)
   V_db <- var(data$d_kt_til)*(N - 1)/N
@@ -280,6 +288,7 @@ calculate_one_minus_Sigma <- function(data) {
   return(one_minus_Sigma)
 }
 
+#' Calculate beta_hat_w
 calculate_beta_hat_w <- function(data) {
   # TODO test equation 25
   N <- nrow(data)
@@ -289,7 +298,7 @@ calculate_beta_hat_w <- function(data) {
   return(beta_hat_w)
 }
 
-
+#' Calculate Weights in Controlled Decomposition
 calculate_weights_controled <- function(data, treated_group,
                                         untreated_group, V_db) {
   # TODO test: between 0-1? (ask him), and sum to 1
@@ -302,4 +311,42 @@ calculate_weights_controled <- function(data, treated_group,
   return(s_kl)
 }
 
+#' Calculate p_it and Variants
+calculate_ps <- function(data, control_formula) {
+  
+  dm_control_formula <- update(control_formula, . ~ . + factor(id) + factor(time))
+  fit_treat <- lm(dm_control_formula, data = data)
+  
+  # residulals
+  data$p_it_til <- predict(fit_treat)
+  return(data)
+}
+
+#' Calculate beta_pb_kl
+calculate_beta_pb_kl <- function(data) {
+  
+  return(beta_pb_kl)
+}
+
+#' Calculate VD_kl
+calculate_VD_kl <- function(data) {
+  N <- nrow(data)
+  data$D_jt_til <- data$treated - cov(data$treated, data$id) - 
+    cov(data$treated, data$time) + mean(data$treated)
+  fit <- lm(D_jt_til ~ factor(id) + factor(time), data = data)
+  VD_kl <- var(fit$residuals)*(N - 1)/N
+  return(VD_kl)
+}
+
+#' Calculate Vp_kl
+calculate_Vp_kl <- function(data, control_formula) {
+  N <- nrow(data)
+  dm_control_formula <- update(control_formula, . ~ . + factor(id) + 
+                                 factor(time))
+  fit <- lm(dm_control_formula, data = data)
+  data$p_jt_til <- predict(fit)
+  fit <- lm(p_jt_til ~ factor(id) + factor(time), data = data)
+  Vp_kl <- var(fit$residuals)*(N - 1)/N
+  return(Vp_kl)
+}
 
