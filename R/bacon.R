@@ -93,8 +93,8 @@ bacon <- function(formula,
   } else if (length(control_vars > 0)) {
     # Controled ----------------------------------------------------------------
     # Predict Treatment and calulate demeaned residuals
-    control_formula <- paste(control_vars, collapse = " + ")
-    control_formula <- as.formula(paste("treated ~", control_formula))
+    control_formula <- update(formula,
+                              paste0(treated_var, "~ . -", treated_var))
     data <- calculate_ds(data, control_formula)
     # Ca
     Sigma <- calculate_Sigma(data)
