@@ -150,7 +150,6 @@ bacon <- function(formula,
     calculate_Sigma <- function(data) {
       # TODO Test that within + between = 1
       
-      
       Sigma <- var(data$d_ikt_til)/var(data$d_it_til)
       return(Sigma)
     }
@@ -164,6 +163,8 @@ bacon <- function(formula,
     data <- calculate_ds(data, control_formula)
     Sigma <- calculate_Sigma(data)
     beta_hat_w <- calculate_beta_hat_w(data)
+    V_bd <- var(data$d_kt_til)
+    
     
     for (i in 1:nrow(two_by_twos)) {
       treated_group <- two_by_twos[i, "treated"]
@@ -175,16 +176,37 @@ bacon <- function(formula,
         data1 <- data1[data1$time >= untreated_group, ]
       }
       
-      skl <- calculate_weights_controled(data1, treated_group, untreated_group)
-      
+      skl <- calculate_weights_controled(data1, treated_group, untreated_group, 
+                                         V_bd)
     }
   }
 }
 
 
 calculate_weights_controled <- function(data, treated_group, 
-                                        untreated_group) {
-  
+                                        untreated_group, V_db) {
+  # TODO test: between 0-1? (ask him), and sum to 1
+  if (untreated_group == 99999) {
+    # Treated vs untreated
+    n_u <- sum(data$treat_time == untreated_group)
+    n_k <- sum(data$treat_time == treated_group)
+    V_bkl <- var(data$d_kt_til) # this is the V(d_kt) but only for these subgroups
+    s_kl <- (n_u + n_k)^2 * V_bkl/V_db
+    
+  } else if (treated_group < untreated_group) {
+    # early vs late (before late is treated)
+    n_k <- sum(data$treat_time == treated_group)
+    n_l <- sum(data$treat_time == untreated_group)
+    V_bkl <- var(data$d_kt_til) # this is the V(d_kt) but only for these subgroups
+    s_kl <- (n_k + n_l)^2 * V_bkl/V_db
+  } else if (treated_group > untreated_group) {
+    # late vs early (after early is treated)
+    n_k <- sum(data$treat_time == untreated_group)
+    n_l <- sum(data$treat_time == treated_group)
+    V_bkl <- var(data$d_kt_til) # this is the V(d_kt) but only for these subgroups
+    s_kl <- (n_k + n_l)^2 * V_bkl/V_db
+  }
+  return(s_kl)
 }
 
 #' Calculate Weights for 2x2 Grid
