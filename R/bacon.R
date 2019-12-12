@@ -21,6 +21,7 @@
 #'
 #' \donttest{
 #'
+#' library(ggplot2)
 #' ggplot(df_bacon) +
 #'   aes(x = weight, y = estimate, shape = factor(type)) +
 #'   labs(x = "Weight", y = "Estimate", shape = "Type") +
@@ -40,20 +41,20 @@ bacon <- function(formula,
                   data,
                   id_var,
                   time_var) {
-  
+
   # Rename variables
   outcome_var <- as.character(formula)[2]
   right_side_vars <- as.character(formula)[3]
   right_side_vars <- strsplit(right_side_vars, " \\+ ")[[1]]
   treated_var <- right_side_vars[1]
   control_vars <- right_side_vars[-1]
-  
+
   colnames(data)[which(colnames(data) %in%
-                   c(id_var, 
-                     time_var, 
-                     outcome_var, 
+                   c(id_var,
+                     time_var,
+                     outcome_var,
                      treated_var))] <- c("id", "time", "outcome", "treated")
-  
+
   # Check for NA observations
   nas <- sum(is.na(data[, c("id", "time", "outcome", "treated", control_vars)]))
   if (nas > 0) {
@@ -66,23 +67,13 @@ bacon <- function(formula,
   if (!balanced) {
     stop("Unbalanced Panel")
   }
-  
-  df_treat <- data[data$treated == 1, ]
-  df_treat <- df_treat[, c("id", "time")]
-  df_treat <- stats::aggregate(time ~ id,  data = df_treat, FUN = min)
-  colnames(df_treat) <- c("id", "treat_time")
-  data <- merge(data, df_treat, by = "id", all.x = T)
-  data[is.na(data$treat_time), "treat_time"] <- 99999
-  
-  # Check for weakly increasing treatment
-  inc <- ifelse(data$treat_time == 99999, 1, 
-                ifelse(data$time >= data$treat_time & data$treated == 1, 1, 
-                       ifelse(data$time < data$treat_time & data$treated == 0, 
-                              1, 0)))
-  if (!all(as.logical(inc))) {
-    stop("Treatment not weakly increasing with time")
-  }
-  
+  # Create grid of treatment groups
+  treatment_group_calc <- create_treatment_groups(data,
+                                                  return_merged_df = TRUE)
+  two_by_twos <- treatment_group_calc$two_by_twos
+  data <- treatment_group_calc$data
+
+
   # First period in the panel
   first_period <- min(data$time)
 
@@ -106,37 +97,37 @@ bacon <- function(formula,
       } else if (treated_group > untreated_group) {
         data1 <- data1[data1$time >= untreated_group, ]
       }
-      
+
       weight1 <- calculate_weights(data = data1,
                                    treated_group = treated_group,
                                    untreated_group = untreated_group)
-      
+
       # Estimate 2x2 diff-in-diff
       estimate1 <- stats::lm(outcome ~ treated + factor(time) + factor(id),
                              data = data1)$coefficients[2]
-      
+
       two_by_twos[i, "estimate"] <- estimate1
       two_by_twos[i, "weight"] <- weight1
     }
     return(two_by_twos)
   } else if (length(control_vars > 0)) {
-    
+
     # Controled ----------------------------------------------------------------
     # Predict Treatment
     control_formula <- paste(control_vars, collapse = " + ")
     control_formula <- as.formula(paste("treated ~", control_formula))
-  
+
     data <- calculate_ds(data, control_formula)
     Sigma <- calculate_Sigma(data)
     one_minus_Sigma <- calculate_one_minus_Sigma(data)
-    
+
     Sigma + one_minus_Sigma
-    
-    
+
+
     beta_hat_w <- calculate_beta_hat_w(data)
     N <- nrow(data)
     V_bd <- var(data$d_kt_til)*(N - 1)/N
-    
+
     for (i in 1:nrow(two_by_twos)) {
       treated_group <- two_by_twos[i, "treated"]
       untreated_group <- two_by_twos[i, "untreated"]
@@ -146,8 +137,8 @@ bacon <- function(formula,
       } else if (treated_group > untreated_group) {
         data1 <- data1[data1$time >= untreated_group, ]
       }
-      
-      skl <- calculate_weights_controled(data1, treated_group, untreated_group, 
+
+      skl <- calculate_weights_controled(data1, treated_group, untreated_group,
                                          V_bd)
     }
   }
@@ -156,14 +147,14 @@ bacon <- function(formula,
 calculate_ds <- function(data, control_formula) {
   fit_treat <- lm(control_formula, data = data)
   data$d_it <- fit_treat$residuals
-  
+
   # OLD WAY OF D_IT_TIL
   # dm_control_formula <- update(control_formula, . ~ . + 0 + factor(time) + factor(id))
   # fit_treat_dm <- lm(dm_control_formula, data = data)
   # data$d_it_til <- fit_treat_dm$residuals
-  
+
   data$d_it_til <- data$d_it - data$d_i_bar - data$d_t_bar + data$d_bar_bar
-  
+
   data$d_i_bar <- ave(data$d_it, data$id)
   data$d_t_bar <- ave(data$d_it, data$time)
   data$d_bar_bar <- mean(data$d_it)
@@ -200,7 +191,7 @@ calculate_beta_hat_w <- function(data) {
 }
 
 
-calculate_weights_controled <- function(data, treated_group, 
+calculate_weights_controled <- function(data, treated_group,
                                         untreated_group, V_db) {
   # TODO test: between 0-1? (ask him), and sum to 1
   if (untreated_group == 99999) {
@@ -209,7 +200,7 @@ calculate_weights_controled <- function(data, treated_group,
     n_k <- sum(data$treat_time == treated_group)
     V_bkl <- var(data$d_kt_til) # this is the V(d_kt) but only for these subgroups
     s_kl <- (n_u + n_k)^2 * V_bkl/V_db
-    
+
   } else if (treated_group < untreated_group) {
     # early vs late (before late is treated)
     n_k <- sum(data$treat_time == treated_group)
@@ -225,6 +216,54 @@ calculate_weights_controled <- function(data, treated_group,
   }
   return(s_kl)
 }
+
+
+#' Create Grid of Treatment Groups
+#'
+#' @param data dataset used to create groups - MUST obey naming convention used
+#' in `bacon()`. i.e. columns are ["id", "time", "outcome", "treated"]
+#' @param return_merged_df Defaults to `FALSE` whether to return merged data
+#' as well as grid of treatment groups.
+#'
+#' @return data.frame describing treatment groups and empty weight and estimate
+#' column set to 0.
+create_treatment_groups <- function(data, return_merged_df = FALSE){
+  df_treat <- data[data$treated == 1, ]
+  df_treat <- df_treat[, c("id", "time")]
+  df_treat <- stats::aggregate(time ~ id,  data = df_treat, FUN = min)
+  colnames(df_treat) <- c("id", "treat_time")
+  data <- merge(data, df_treat, by = "id", all.x = T)
+  data[is.na(data$treat_time), "treat_time"] <- 99999
+
+  # Check for weakly increasing treatment
+  inc <- ifelse(data$treat_time == 99999, 1,
+                ifelse(data$time >= data$treat_time & data$treated == 1, 1,
+                       ifelse(data$time < data$treat_time & data$treated == 0,
+                              1, 0)))
+  if (!all(as.logical(inc))) {
+    stop("Treatment not weakly increasing with time")
+  }
+  # create data.frame of all posible 2x2 estimates
+  two_by_twos <- expand.grid(unique(data$treat_time),
+                             unique(data$treat_time))
+  colnames(two_by_twos) <- c("treated", "untreated")
+  two_by_twos <- two_by_twos[!(two_by_twos$treated == two_by_twos$untreated), ]
+  two_by_twos <- two_by_twos[!(two_by_twos$treated == 99999), ]
+  # Remove first period
+  two_by_twos <- two_by_twos[!(two_by_twos$treated == min(data$time)), ]
+  two_by_twos[, c("estimate", "weight")] <- 0
+
+
+  # Whether or not to return the merged data too.
+  if (return_merged_df == TRUE) {
+    return_data <- list("two_by_twos" = two_by_twos,
+                     "data" = data)
+  } else {
+    return_data <- two_by_twos
+  }
+  return(return_data)
+}
+
 
 #' Calculate Weights for 2x2 Grid
 #'
@@ -280,7 +319,5 @@ predict_treatment <- function(formula, data) {
 }
 
 calc_witin_var <- function(resid, groups) {
-  
+
 }
-
-
