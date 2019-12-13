@@ -30,6 +30,13 @@
 #'   }
 #'
 #' @export
+#'
+
+data <- bacon::castle
+formula <- l_homicide ~ post + l_income + l_pop
+id_var <- "state"
+time_var <- "year"
+
 bacon <- function(formula,
                   data,
                   id_var,
@@ -41,7 +48,7 @@ bacon <- function(formula,
   treated_var <- vars$treated_var
   control_vars <- vars$control_vars
   data <- rename_vars(data, id_var, time_var, outcome_var, treated_var)
-
+  
   # Check for NA observations
   nas <- sum(is.na(data[, c("id", "time", "outcome", "treated", control_vars)]))
   if (nas > 0) {
@@ -65,7 +72,8 @@ bacon <- function(formula,
   first_period <- min(data$time)
 
   # Uncontrolled ---------------------------------------------------------------
-  if (length(control_vars == 0)) {
+  if (length(control_vars) == 0) {
+    print("Uncontrolled")
     for (i in 1:nrow(two_by_twos)) {
       treated_group <- two_by_twos[i, "treated"]
       untreated_group <- two_by_twos[i, "untreated"]
@@ -82,9 +90,14 @@ bacon <- function(formula,
       two_by_twos[i, "estimate"] <- estimate1
       two_by_twos[i, "weight"] <- weight1
     }
-    # r_list <- list(two_by_twos = two_by_twos)
-  } else if (length(control_vars > 0)) {
+    
+    two_by_twos <- scale_weights(two_by_twos)
+    
+    return(two_by_twos)
+    
+  } else if (length(control_vars) > 0) {
     # Controled ----------------------------------------------------------------
+    print("Controlled")
     # Predict Treatment and calulate demeaned residuals
     control_formula <- update(formula,
                               paste0("treated ~ . + factor(time) + factor(id) -",
@@ -111,11 +124,11 @@ bacon <- function(formula,
       two_by_twos[i, "weight"] <- skl
       two_by_twos[i, "estimate"] <- beta_hat_db_kl
     }
+    r_list <- list("beta_hat_w" = beta_hat_w,
+                   "Sigma" = Sigma,
+                   "two_by_twos" = two_by_twos)
+    return(r_list)
   }
-  r_list <- list("beta_hat_w" = beta_hat_w,
-                 "Sigma" = Sigma,
-                 "two_by_twos" = two_by_twos)
-  return(r_list)
 }
 
 #' Unpack Variable Names from Formula
@@ -257,6 +270,13 @@ calculate_weights <- function(data,
   return(weight1)
 }
 
+#' Scale 2x2 Weights
+scale_weights <- function(two_by_twos) {
+  sum_weight <- sum(two_by_twos$weight)
+  two_by_twos$weight <- two_by_twos$weight/sum_weight
+  return(two_by_twos)
+}
+
 #' Calculate d_it and Variants
 calculate_ds <- function(data, control_formula) {
   
@@ -343,7 +363,7 @@ calculate_weights_controled <- function(data, treated_group,
 }
 
 calculate_VD_kl <- function(data) {
-  D_jt_til <- mean(data$treated) - ave(data$treated, data$treat_time)
+  data$D_jt_til <- mean(data$treated) - ave(data$treated, data$treat_time)
   fit <- lm(D_jt_til ~ factor(id) + factor(time), data = data)
   resid <- fit$residuals
   N <- nrow(data)
@@ -354,8 +374,8 @@ calculate_VD_kl <- function(data) {
 calculate_Vp_bkl <- function(data) {
   fit <- lm(data$p_jt_til ~ factor(id) + factor(time), 
             data = data)
-  resid <- fit$residulals
-  N <-nrow(data)
+  resid <- fit$residuals
+  N <- nrow(data)
   Vp_bkl <- var(resid)*(N - 1)/N
 }
 
@@ -376,7 +396,7 @@ calculate_beta_hat_db_kl <- function(data, V_bd) {
   VD_kl <- calculate_VD_kl(data)
   beta_hat_22_kl <- calculate_beta_hat_22_kl(data)
   Vp_bkl <- calculate_Vp_bkl(data)
-  beta_gat_p_bkl <- calculate_beta_hat_p_bkl(data)
+  beta_hat_p_bkl <- calculate_beta_hat_p_bkl(data)
   beta_hat_db_kl <- (VD_kl*beta_hat_22_kl - Vp_bkl*beta_hat_p_bkl)/V_bd
 }
 
