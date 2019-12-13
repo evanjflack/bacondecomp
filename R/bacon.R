@@ -30,13 +30,6 @@
 #'   }
 #'
 #' @export
-#'
-
-data <- bacon::castle
-formula <- l_homicide ~ post + l_income + l_pop
-id_var <- "state"
-time_var <- "year"
-
 bacon <- function(formula,
                   data,
                   id_var,
@@ -145,12 +138,10 @@ unpack_variable_names <- function(formula) {
 
 #' Rename Variables
 rename_vars <- function(data, id_var, time_var, outcome_var, treated_var) {
-  colnames(data)[which(colnames(data) %in%
-                         c(id_var,
-                           time_var,
-                           outcome_var,
-                           treated_var))] <- c("id", "time", "outcome",
-                                               "treated")
+  colnames(data)[colnames(data) == id_var] <- "id"
+  colnames(data)[colnames(data) == time_var] <- "time"
+  colnames(data)[colnames(data) == outcome_var] <- "outcome" 
+  colnames(data)[colnames(data) == treated_var] <- "treated"
   return(data)
 }
 

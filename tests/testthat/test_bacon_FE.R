@@ -27,24 +27,27 @@ test_that("Two Way FE recovered", {
 
 ##### Multivariate #####
 
-
-df_bacon_multivariate <- bacon(l_homicide ~ post + income + police,
-                               data = bacon::castle,
-                               id_var = "state",
-                               time_var = "year")
-
+ret_bacon <- bacon(l_homicide ~ post + income + police,
+                   data = bacon::castle,
+                   id_var = "state",
+                   time_var = "year")
 
 test_that("Multivariate bacon returns working object", {
-  expect_equal(class(df_bacon_multivariate), "data.frame")
-  expect_true(nrow(df_bacon_multivariate) > 0)
-  expect_true(ncol(ddf_bacon_multivariate) > 0)
+  expect_equal(class(ret_bacon), "list")
+  expect_true(length(ret_bacon) == 3)
 })
 
-# Weighted sum
-two_way_bacon_multivariate_coef <- sum(df_bacon_multivariate$estimate * df_bacon$weight)
 
+# Bacon estimate
+beta_hat_w <- ret_bacon$beta_hat_w
+beta_hat_b <- weighted.mean(ret_bacon$two_by_twos$estimate, 
+                            ret_bacon$two_by_twos$weight)
 
-# Two way FE
+Sigma <- ret_bacon$Sigma
+
+two_way_bacon_coef_multi <- Sigma*beta_hat_w + (1 - Sigma)*beta_hat_b
+
+# Two way FE estimate
 two_way_fe_multi <- lm(l_homicide ~ post + income + police + factor(state) + factor(year),
                  data = bacon::castle)
 two_way_fe_coef_multi <- two_way_fe_multi$coefficients["post"]

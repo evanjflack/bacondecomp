@@ -18,6 +18,7 @@ df_bacon <- bacon(y ~ treated,
                   data = df_test,
                   id_var = "id",
                   time_var = "time")
+
 weights <- df_bacon[order(-df_bacon$untreated, df_bacon$treat), "weight"]
 weights <- round(weights, 3)
 
