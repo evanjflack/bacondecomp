@@ -14,7 +14,7 @@ control_vars <- vars$control_vars
 df_test <- rename_vars(df_test_orig, id_var, time_var, outcome_var, treated_var)
 
 # Create grid of treatment groups
-treatment_group_calc <- create_treatment_groups(df_test,
+treatment_group_calc <- create_treatment_groups(df_test, control_vars, 
                                                 return_merged_df = TRUE)
 # extract data to test
 test_data <- treatment_group_calc$data

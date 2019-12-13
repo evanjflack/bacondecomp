@@ -29,25 +29,23 @@
 #'
 #'   }
 #'
-#'
 #' @export
-
-data <- bacon::castle
-formula <- l_homicide ~ post + l_pop + l_income
-id_var <- "state"
-time_var <- "year"
-
 bacon <- function(formula,
                   data,
                   id_var,
                   time_var) {
+  
+  # data <- bacon::castle
+  # formula <- l_homicide ~ post + l_pop + l_income
+  # id_var <- "state"
+  # time_var <- "year"
+  
+  # Unpack variable names and rename variables
   vars <- unpack_variable_names(formula)
   outcome_var <- vars$outcome_var
   treated_var <- vars$treated_var
   control_vars <- vars$control_vars
-
   data <- rename_vars(data, id_var, time_var, outcome_var, treated_var)
-
 
   # Check for NA observations
   nas <- sum(is.na(data[, c("id", "time", "outcome", "treated", control_vars)]))
@@ -62,19 +60,14 @@ bacon <- function(formula,
     stop("Unbalanced Panel")
   }
 
-  # Create grid of treatment groups
-  treatment_group_calc <- create_treatment_groups(data,
+  # Create 2x2 grid of treatment groups
+  treatment_group_calc <- create_treatment_groups(data, control_vars, 
                                                   return_merged_df = TRUE)
   two_by_twos <- treatment_group_calc$two_by_twos
   data <- treatment_group_calc$data
   
   # First period in the panel
   first_period <- min(data$time)
-  
-  df <- two_by_twos
-  df <- df[order(df$treated, df$untreated), ]
-  
-  hi <- unique(df[, c("treated", "untreated")])
 
   # Uncontrolled ---------------------------------------------------------------
   if (length(control_vars == 0)) {
@@ -94,6 +87,7 @@ bacon <- function(formula,
       two_by_twos[i, "estimate"] <- estimate1
       two_by_twos[i, "weight"] <- weight1
     }
+    r_list <- list(two_by_twos = two_by_twos)
   } else if (length(control_vars > 0)) {
     # Controled ----------------------------------------------------------------
     # Predict Treatment and calulate demeaned residuals
@@ -101,7 +95,8 @@ bacon <- function(formula,
                               paste0("treated ~ . + factor(time) + factor(id) -",
                                      treated_var))
     data <- calculate_ds(data, control_formula)
-    # Ca
+    data <- calculate_ps(data, control_formula)
+  
     Sigma <- calculate_Sigma(data)
     # one_minus_Sigma <- calculate_one_minus_Sigma(data)
     beta_hat_w <- calculate_beta_hat_w(data)
@@ -113,15 +108,19 @@ bacon <- function(formula,
       treated_group <- two_by_twos[i, "treated"]
       untreated_group <- two_by_twos[i, "untreated"]
       data1 <- data[data$treat_time %in% c(treated_group, untreated_group), ]
+      
       skl <- calculate_weights_controled(data1, treated_group, untreated_group,
                                          V_bd)
-      fit_2x2 <- lm(outcome ~ treated + factor(id) + factor(time), data = data1)
-      beta_2x2_kl <- fit_2x2$coefficients["treated"]
+      beta_hat_db_kl <- calculate_beta_hat_db_kl(data, V_bd)
 
-      
       two_by_twos[i, "weight"] <- skl
+      two_by_twos[i, "estimate"] <- beta_hat_db_kl
     }
+    r_list <- list(two_by_twos = two_by_twos, 
+                   beta_hat_w = beta_hat_w, 
+                   Sigma = Sigma)
   }
+  return(r_list)
 }
 
 #' Unpack Variable Names from Formula
@@ -169,6 +168,7 @@ create_treatment_groups <- function(data, control_vars, return_merged_df = FALSE
                 ifelse(data$time >= data$treat_time & data$treated == 1, 1,
                        ifelse(data$time < data$treat_time & data$treated == 0,
                               1, 0)))
+  
   if (!all(as.logical(inc))) {
     stop("Treatment not weakly increasing with time")
   }
@@ -329,10 +329,10 @@ calculate_beta_hat_b <- function(data) {
 
 calculate_ps <- function(data, control_formula) {
   fit_treat <- lm(control_formula, data = data)
-  # predicted
-  data$p_it <- predict(fit_treat)
+  data$p_it_til <- predict(fit_treat)
   data$p_jt_bar <- ave(data$p_it, data$treat_time, data$time)
-  data$p_jt_til <- data$p_it_tile - data$p_jt_bar
+  data$p_jt_til <- data$p_it_til - data$p_jt_bar
+  return(data)
 }
 
 calculate_weights_controled <- function(data, treated_group,
@@ -375,6 +375,14 @@ calculate_beta_hat_p_bkl <- function(data) {
   fit <- lm(y_jt_bar ~ p_jt_bar + factor(id) + factor(time), data = data)
   beta_hat_p_bkl <- fit$coefficients["p_jt_bar"]
   return(beta_hat_p_bkl)
+}
+
+calculate_beta_hat_db_kl <- function(data, V_bd) {
+  VD_kl <- calculate_VD_kl(data)
+  beta_hat_22_kl <- calculate_beta_hat_22_kl(data)
+  Vp_bkl <- calculate_Vp_bkl(data)
+  beta_gat_p_bkl <- calculate_beta_hat_p_bkl(data)
+  beta_hat_db_kl <- (VD_kl*beta_hat_22_kl - Vp_bkl*beta_hat_p_bkl)/V_bd
 }
 
 

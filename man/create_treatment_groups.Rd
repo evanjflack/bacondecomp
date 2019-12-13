@@ -4,7 +4,7 @@
 \alias{create_treatment_groups}
 \title{Create Grid of Treatment Groups}
 \usage{
-create_treatment_groups(data, return_merged_df = FALSE)
+create_treatment_groups(data, control_vars, return_merged_df = FALSE)
 }
 \arguments{
 \item{data}{dataset used to create groups - MUST obey naming convention used
