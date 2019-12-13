@@ -310,22 +310,12 @@ calculate_beta_hat_b <- function(data) {
   return(beta_hat_b)
 }
 
-calculate_VD_kl <- function(data) {
-  fit <- lm(D_it_til ~ factor(id) + factor(time), data = data)
-  resid <- fit$residuals
-  N <- nrow(data)
-  VD_kl <- var(resid)*(N - 1)/N
-  return(VD_kl)
-}
-
 calculate_ps <- function(data, control_formula) {
   fit_treat <- lm(control_formula, data = data)
   # predicted
   data$p_it <- predict(fit_treat)
-  data$p_it_bar <- ave(data$p_it, data$id, data$id)
-}
-
-calculate_Vp_bkl <- function(data, control_formula) {
+  data$p_jt_bar <- ave(data$p_it, data$treat_time, data$time)
+  data$p_jt_til <- data$p_it_tile - data$p_jt_bar
 }
 
 calculate_weights_controled <- function(data, treated_group,
@@ -338,4 +328,34 @@ calculate_weights_controled <- function(data, treated_group,
   V_bkl <- var(data$d_kt_til)*(N - 1)/N # this is the V(d_kt) but only for these subgroups
   s_kl <- (n_k + n_l)^2 * V_bkl/V_db
   return(s_kl)
+}
+
+calculate_VD_kl <- function(data) {
+  D_jt_til <- mean(data$treated) - ave(data$treated, data$treat_time)
+  fit <- lm(D_jt_til ~ factor(id) + factor(time), data = data)
+  resid <- fit$residuals
+  N <- nrow(data)
+  VD_kl <- var(resid)*(N - 1)/N
+  return(VD_kl)
+}
+
+calculate_Vp_bkl <- function(data) {
+  fit <- lm(data$p_jt_til ~ factor(id) + factor(time), 
+            data = data)
+  resid <- fit$residulals
+  N <-nrow(data)
+  Vp_bkl <- var(resid)*(N - 1)/N
+}
+
+calculate_beta_hat_22_kl <- function(data) {
+  fit <- lm(outcome ~ treated + factor(id) + factor(time), data = data)
+  beta_hat_22_kl <- fit$coefficients["treated"]
+  return(beta_hat_22_kl)
+}
+
+calculate_beta_hat_p_bkl <- function(data) {
+  data$y_jt_bar <- ave(data$outcome, data$treat_time, data$time)
+  fit <- lm(y_jt_bar ~ p_jt_bar + factor(id) + factor(time), data = data)
+  beta_hat_p_bkl <- fit$coefficients["p_jt_bar"]
+  return(beta_hat_p_bkl)
 }
