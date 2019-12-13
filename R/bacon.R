@@ -101,8 +101,6 @@ bacon <- function(formula,
     # one_minus_Sigma <- calculate_one_minus_Sigma(data)
     beta_hat_w <- calculate_beta_hat_w(data)
 
-
-
     N <- nrow(data)
     V_bd <- var(data$d_kt_til)*(N - 1)/N
 
@@ -115,9 +113,7 @@ bacon <- function(formula,
       fit_2x2 <- lm(outcome ~ treated + factor(id) + factor(time), data = data1)
       beta_2x2_kl <- fit_2x2$coefficients["treated"]
 
-
-
-
+      
       two_by_twos[i, "weight"] <- skl
     }
   }
@@ -307,12 +303,12 @@ calculate_beta_hat_w <- function(data) {
   return(beta_hat_w)
 }
 
-calculate_beta_hat_d <- function(data) {
+calculate_beta_hat_b <- function(data) {
   N <- nrow(data)
   C <- cov(data$outcome, data$d_kt_til)*(N - 1)/N
   V_d <- var(data$d_kt_til)*(N - 1)/N
-  beta_hat_d <- C/V_d
-  return(beta_hat_d)
+  beta_hat_b <- C/V_d
+  return(beta_hat_b)
 }
 
 calculate_weights_controled <- function(data, treated_group,

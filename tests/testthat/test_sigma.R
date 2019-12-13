@@ -42,8 +42,8 @@ test_that("Sigma and One Minus Sigma Sum to 1", {
 beta_hat_dd_23 <- cov(test_data$outcome, test_data$d_it_til)/var(test_data$d_it_til)
 
 beta_hat_w <- calculate_beta_hat_w(test_data)
-beta_hat_d <- calculate_beta_hat_d(test_data)
-beta_hat_dd_25 <- Sigma * beta_hat_w + one_minus_Sigma * beta_hat_d 
+beta_hat_b <- calculate_beta_hat_b(test_data)
+beta_hat_dd_25 <- Sigma * beta_hat_w + one_minus_Sigma * beta_hat_b
 
 
 
