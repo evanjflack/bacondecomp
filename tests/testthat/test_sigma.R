@@ -19,7 +19,7 @@ treatment_group_calc <- create_treatment_groups(df_test,
 test_data <- treatment_group_calc$data
 # dummy control var
 control_formula <- update(formula,
-                          paste0("treated ~ . + factor(time) + factor(id) -",
+                          paste0("treated ~ .  + factor(time) + factor(id) -",
                                  treated_var))
 # Calculate the Ds
 test_data <- calculate_ds(test_data, control_formula)
@@ -59,6 +59,6 @@ test_that("Recover Two Way Coef Using EQN 23, pg 25", {
 })
 
 test_that("Recover Two Way Coef Using EQN 25, pg 26 WP", {
-  expect_equal(beta_hat_dd, two_way_coef)
+  expect_equal(beta_hat_dd_25, two_way_coef)
 })
 
