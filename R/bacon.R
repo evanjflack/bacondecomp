@@ -350,13 +350,13 @@ calculate_weights_controled <- function(data, treated_group,
 calculate_ps <- function(data, control_formula) {
   fit_treat <- lm(control_formula, data = data)
   data$p_it_til <- predict(fit_treat)
-  data$p_jt_bar <- ave(data$p_it, data$treat_time, data$time)
-  data$p_jt_til <- data$p_it_til - data$p_jt_bar
+  data$p_jt_bar <- ave(data$p_it_til, data$treat_time, data$time)
+  data$p_jt_til <- data$p_it_til - ave(data$p_it_til, data$treat_time) - ave(data$p_it_til, data$time)
   return(data)
 }
 
 calculate_VD_kl <- function(data) {
-  data$D_jt_til <- mean(data$treated) - ave(data$treated, data$treat_time)
+  data$D_jt_til <- data$D_it - ave(data$D_it_til, data$treat_time) - ave(data$D_it_til, data$time)
   fit <- lm(D_jt_til ~ factor(id) + factor(time), data = data)
   resid <- fit$residuals
   N <- nrow(data)
