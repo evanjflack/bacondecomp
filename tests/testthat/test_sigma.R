@@ -59,6 +59,6 @@ test_that("Recover Two Way Coef Using EQN 23, pg 25", {
 })
 
 test_that("Recover Two Way Coef Using EQN 25, pg 26 WP", {
-  expect_equal(beta_hat_dd_25, two_way_coef)
+  expect_equal(beta_hat_dd_25, beta_hat_dd_two_way)
 })
 
