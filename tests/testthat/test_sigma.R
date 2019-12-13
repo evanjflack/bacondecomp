@@ -1,6 +1,6 @@
 library(bacon)
 # Create fake data
-df_test <- bacon::castle
+df_test_orig <- bacon::castle
 formula <- l_homicide ~ post + l_pop + l_income
 id_var <- "state"
 time_var <- "year"
@@ -10,7 +10,7 @@ outcome_var <- vars$outcome_var
 treated_var <- vars$treated_var
 control_vars <- vars$control_vars
 
-df_test <- rename_vars(df_test, id_var, time_var, outcome_var, treated_var)
+df_test <- rename_vars(df_test_orig, id_var, time_var, outcome_var, treated_var)
 
 # Create grid of treatment groups
 treatment_group_calc <- create_treatment_groups(df_test,
@@ -34,20 +34,30 @@ test_that("Sigma and One Minus Sigma Sum to 1", {
 })
 
 
+
+
+# Beta Hats
+
+beta_hat_dd_23 <- cov(test_data$outcome, test_data$d_it_til)/var(test_data$d_it_til)
+
 beta_hat_w <- calculate_beta_hat_w(test_data)
 beta_hat_d <- calculate_beta_hat_d(test_data)
-beta_hat_dd <- Sigma * beta_hat_w + one_minus_Sigma * beta_hat_d 
+beta_hat_dd_25 <- Sigma * beta_hat_w + one_minus_Sigma * beta_hat_d 
 
 
 
-beta_hat_dd_two_way <- lm(l_homicide ~ 0 + post + l_pop + l_income + factor(state) + factor(year),
-                          data = bacon::castle)
 
-two_way_coef <- beta_hat_dd_two_way$coefficients["post"]
-names(two_way_coef) <- NULL
+two_way_model <- lm(l_homicide ~ 0 + post + l_pop + l_income + factor(state) + factor(year),
+                          data = df_test_orig)
 
+beta_hat_dd_two_way <- two_way_model$coefficients["post"]
+names(beta_hat_dd_two_way) <- NULL
 
+test_that("Recover Two Way Coef Using EQN 23, pg 25", {
+  expect_equal(beta_hat_dd_23, beta_hat_dd_two_way)
+})
 
 test_that("Recover Two Way Coef Using EQN 25, pg 26 WP", {
   expect_equal(beta_hat_dd, two_way_coef)
 })
+
