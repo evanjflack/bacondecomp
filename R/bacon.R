@@ -34,7 +34,7 @@ bacon <- function(formula,
                   data,
                   id_var,
                   time_var) {
-
+  
   # Unpack variable names and rename variables
   vars <- unpack_variable_names(formula)
   outcome_var <- vars$outcome_var
@@ -47,14 +47,14 @@ bacon <- function(formula,
   if (nas > 0) {
     stop("NA observations")
   }
-
+  
   # Check for balanced panel
   bal <- stats::aggregate(time ~ id,  data = data, FUN = length)
   balanced <- ifelse(all(bal$time == bal$time[1]), 1, 0)
   if (!balanced) {
     stop("Unbalanced Panel")
   }
-
+  
   # Create 2x2 grid of treatment groups
   treatment_group_calc <- create_treatment_groups(data, control_vars, 
                                                   return_merged_df = TRUE)
@@ -63,22 +63,22 @@ bacon <- function(formula,
   
   # First period in the panel
   first_period <- min(data$time)
-
+  
   # Uncontrolled ---------------------------------------------------------------
   if (length(control_vars) == 0) {
     for (i in 1:nrow(two_by_twos)) {
       treated_group <- two_by_twos[i, "treated"]
       untreated_group <- two_by_twos[i, "untreated"]
-
+      
       data1 <- subset_data(data, treated_group, untreated_group)
-
+      
       weight1 <- calculate_weights(data = data1,
                                    treated_group = treated_group,
                                    untreated_group = untreated_group)
-
+      
       estimate1 <- stats::lm(outcome ~ treated + factor(time) + factor(id),
                              data = data1)$coefficients[2]
-
+      
       two_by_twos[i, "estimate"] <- estimate1
       two_by_twos[i, "weight"] <- weight1
     }
@@ -95,14 +95,14 @@ bacon <- function(formula,
                                      treated_var))
     data <- calculate_ds(data, control_formula)
     data <- calculate_ps(data, control_formula)
-  
+    
     Sigma <- calculate_Sigma(data)
     # one_minus_Sigma <- calculate_one_minus_Sigma(data)
     beta_hat_w <- calculate_beta_hat_w(data)
-
+    
     N <- nrow(data)
     V_db <- var(data$d_kt_til)*(N - 1)/N
-
+    
     for (i in 1:nrow(two_by_twos)) {
       treated_group <- two_by_twos[i, "treated"]
       untreated_group <- two_by_twos[i, "untreated"]
@@ -110,11 +110,15 @@ bacon <- function(formula,
       
       skl <- calculate_weights_controled(data1, treated_group, untreated_group,
                                          V_db)
-      beta_hat_db_kl <- calculate_beta_hat_db_kl(data1)
-
+      
+      beta_hat_d_bkl <- calculate_beta_hat_d_bkl(data1)
+      
       two_by_twos[i, "weight"] <- skl
-      two_by_twos[i, "estimate"] <- beta_hat_db_kl
+      two_by_twos[i, "estimate"] <- beta_hat_d_bkl
     }
+    
+    two_by_twos <- scale_weights(two_by_twos)
+    
     r_list <- list("beta_hat_w" = beta_hat_w,
                    "Sigma" = Sigma,
                    "two_by_twos" = two_by_twos)
@@ -159,7 +163,7 @@ create_treatment_groups <- function(data, control_vars, return_merged_df = FALSE
   colnames(df_treat) <- c("id", "treat_time")
   data <- merge(data, df_treat, by = "id", all.x = T)
   data[is.na(data$treat_time), "treat_time"] <- 99999
-
+  
   # Check for weakly increasing treatment
   inc <- ifelse(data$treat_time == 99999, 1,
                 ifelse(data$time >= data$treat_time & data$treated == 1, 1,
@@ -191,7 +195,7 @@ create_treatment_groups <- function(data, control_vars, return_merged_df = FALSE
       }
     }
   }
- 
+  
   # Whether or not to return the merged data too.
   if (return_merged_df == TRUE) {
     return_data <- list("two_by_twos" = two_by_twos,
@@ -331,14 +335,6 @@ calculate_beta_hat_b <- function(data) {
   return(beta_hat_b)
 }
 
-calculate_ps <- function(data, control_formula) {
-  fit_treat <- lm(control_formula, data = data)
-  data$p_it_til <- predict(fit_treat)
-  data$p_jt_bar <- ave(data$p_it, data$treat_time, data$time)
-  data$p_jt_til <- data$p_it_til - data$p_jt_bar
-  return(data)
-}
-
 calculate_weights_controled <- function(data, treated_group,
                                         untreated_group, V_db) {
   # TODO test: between 0-1? (ask him), and sum to 1
@@ -346,9 +342,17 @@ calculate_weights_controled <- function(data, treated_group,
   n_k <- sum(data$treat_time == untreated_group)
   n_l <- sum(data$treat_time == treated_group)
   N <- nrow(data)
-  V_bkl <- var(data$d_kt_til)*(N - 1)/N # this is the V(d_kt) but only for these subgroups
-  s_kl <- (n_k + n_l)^2 * V_bkl/V_db
+  Vd_bkl <- var(data$d_kt_til)*(N - 1)/N # this is the V(d_kt) but only for these subgroups
+  s_kl <- (n_k + n_l)^2 * Vd_bkl/V_db
   return(s_kl)
+}
+
+calculate_ps <- function(data, control_formula) {
+  fit_treat <- lm(control_formula, data = data)
+  data$p_it_til <- predict(fit_treat)
+  data$p_jt_bar <- ave(data$p_it, data$treat_time, data$time)
+  data$p_jt_til <- data$p_it_til - data$p_jt_bar
+  return(data)
 }
 
 calculate_VD_kl <- function(data) {
@@ -381,19 +385,13 @@ calculate_beta_hat_p_bkl <- function(data) {
   return(beta_hat_p_bkl)
 }
 
-calculate_beta_hat_db_kl <- function(data) {
+calculate_beta_hat_d_bkl <- function(data) {
   VD_kl <- calculate_VD_kl(data)
   beta_hat_22_kl <- calculate_beta_hat_22_kl(data)
   Vp_bkl <- calculate_Vp_bkl(data)
   beta_hat_p_bkl <- calculate_beta_hat_p_bkl(data)
   
   N <- nrow(data)
-  V_db_kl <- var(data$d_kt_til)*(N - 1)/N
-  
-  beta_hat_kl <- (VD_kl*beta_hat_22_kl - Vp_bkl*beta_hat_p_bkl)/V_db_kl
+  Vd_bkl <- var(data$d_kt_til)*(N - 1)/N
+  beta_hat_d_bkl <- (VD_kl*beta_hat_22_kl - Vp_bkl*beta_hat_p_bkl)/Vd_bkl
 }
-
-
-
-
-
