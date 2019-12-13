@@ -67,9 +67,14 @@ bacon <- function(formula,
                                                   return_merged_df = TRUE)
   two_by_twos <- treatment_group_calc$two_by_twos
   data <- treatment_group_calc$data
-
+  
   # First period in the panel
   first_period <- min(data$time)
+  
+  df <- two_by_twos
+  df <- df[order(df$treated, df$untreated), ]
+  
+  hi <- unique(df[, c("treated", "untreated")])
 
   # Uncontrolled ---------------------------------------------------------------
   if (length(control_vars == 0)) {
@@ -151,7 +156,7 @@ rename_vars <- function(data, id_var, time_var, outcome_var, treated_var) {
 #'
 #' @return data.frame describing treatment groups and empty weight and estimate
 #' column set to 0.
-create_treatment_groups <- function(data, return_merged_df = FALSE){
+create_treatment_groups <- function(data, control_vars, return_merged_df = FALSE){
   df_treat <- data[data$treated == 1, ]
   df_treat <- df_treat[, c("id", "time")]
   df_treat <- stats::aggregate(time ~ id,  data = df_treat, FUN = min)
@@ -167,17 +172,29 @@ create_treatment_groups <- function(data, return_merged_df = FALSE){
   if (!all(as.logical(inc))) {
     stop("Treatment not weakly increasing with time")
   }
-  # create data.frame of all posible 2x2 estimates
-  two_by_twos <- expand.grid(unique(data$treat_time),
-                             unique(data$treat_time))
-  colnames(two_by_twos) <- c("treated", "untreated")
-  two_by_twos <- two_by_twos[!(two_by_twos$treated == two_by_twos$untreated), ]
-  two_by_twos <- two_by_twos[!(two_by_twos$treated == 99999), ]
-  # Remove first period
-  two_by_twos <- two_by_twos[!(two_by_twos$treated == min(data$time)), ]
-  two_by_twos[, c("estimate", "weight")] <- 0
-
-
+  
+  if (length(control_vars) == 0) {
+    # create data.frame of all posible 2x2 estimates
+    two_by_twos <- expand.grid(unique(data$treat_time),
+                               unique(data$treat_time))
+    colnames(two_by_twos) <- c("treated", "untreated")
+    two_by_twos <- two_by_twos[!(two_by_twos$treated == two_by_twos$untreated), ]
+    two_by_twos <- two_by_twos[!(two_by_twos$treated == 99999), ]
+    # Remove first period
+    two_by_twos <- two_by_twos[!(two_by_twos$treated == min(data$time)), ]
+    two_by_twos[, c("estimate", "weight")] <- 0
+  } else if (length(control_vars) > 0) {
+    two_by_twos <- data.frame()
+    for (i in unique(data$treat_time[data$treat_time != 99999])) {
+      for (j in unique(data$treat_time)) {
+        if (j > i) {
+          two_by_twos1 <- data.frame(treated = i, untreated = j, weight = 0, estimate = 0)
+          two_by_twos <- rbind(two_by_twos, two_by_twos1)
+        }
+      }
+    }
+  }
+ 
   # Whether or not to return the merged data too.
   if (return_merged_df == TRUE) {
     return_data <- list("two_by_twos" = two_by_twos,
@@ -359,3 +376,8 @@ calculate_beta_hat_p_bkl <- function(data) {
   beta_hat_p_bkl <- fit$coefficients["p_jt_bar"]
   return(beta_hat_p_bkl)
 }
+
+
+
+
+
