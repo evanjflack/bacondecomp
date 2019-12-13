@@ -247,15 +247,12 @@ calculate_weights <- function(data,
 
 #' Calculate d_it and Variants
 calculate_ds <- function(data, control_formula) {
-
-  ##
+  
   #  Quoting:
   # To see how the controlled DD coefficient is identified first remove unit- and time-
-    # means(indicated by tildes) and then estimate a Frisch-Waugh regression that partials
+  # means(indicated by tildes) and then estimate a Frisch-Waugh regression that partials
   # 𝑿𝑿�𝒊𝒊𝒂𝒂out of 𝐷𝐷�𝑖𝑖𝑖𝑖
-
-  ##
-
+  
   # Think we need to demean here, before hand
   # predict treatment
   fit_treat <- lm(control_formula, data = data)
@@ -266,12 +263,14 @@ calculate_ds <- function(data, control_formula) {
   data$d_t_bar <- ave(data$d_it, data$time)
   data$d_bar_bar <- mean(data$d_it)
   data$d_it_til <- data$d_it - data$d_i_bar - data$d_t_bar + data$d_bar_bar
-
+  
   data$d_kt_bar <- ave(data$d_it, data$treat_time, data$time)
   data$d_k_bar <- ave(data$d_it, data$treat_time)
   data$d_ikt_til <- data$d_it - data$d_i_bar - (data$d_kt_bar - data$d_k_bar)
   data$d_kt_til <- (data$d_kt_bar - data$d_k_bar) - (data$d_t_bar - data$d_bar_bar)
-
+  
+  data$D_it_til <- data$treated - ave(data$treated, data$id) - ave(data$treated, data$time) + mean(data$treated)
+  
   return(data)
 }
 
@@ -309,6 +308,24 @@ calculate_beta_hat_b <- function(data) {
   V_d <- var(data$d_kt_til)*(N - 1)/N
   beta_hat_b <- C/V_d
   return(beta_hat_b)
+}
+
+calculate_VD_kl <- function(data) {
+  fit <- lm(D_it_til ~ factor(id) + factor(time), data = data)
+  resid <- fit$residuals
+  N <- nrow(data)
+  VD_kl <- var(resid)*(N - 1)/N
+  return(VD_kl)
+}
+
+calculate_ps <- function(data, control_formula) {
+  fit_treat <- lm(control_formula, data = data)
+  # predicted
+  data$p_it <- predict(fit_treat)
+  data$p_it_bar <- ave(data$p_it, data$id, data$id)
+}
+
+calculate_Vp_bkl <- function(data, control_formula) {
 }
 
 calculate_weights_controled <- function(data, treated_group,

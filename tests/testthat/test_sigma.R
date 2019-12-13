@@ -1,4 +1,5 @@
 library(bacon)
+
 # Create fake data
 df_test_orig <- bacon::castle
 formula <- l_homicide ~ post + l_pop + l_income
@@ -34,22 +35,16 @@ test_that("Sigma and One Minus Sigma Sum to 1", {
   expect_equal(Sigma + one_minus_Sigma, 1)
 })
 
-
-
-
 # Beta Hats
-
 beta_hat_dd_23 <- cov(test_data$outcome, test_data$d_it_til)/var(test_data$d_it_til)
 
 beta_hat_w <- calculate_beta_hat_w(test_data)
 beta_hat_b <- calculate_beta_hat_b(test_data)
 beta_hat_dd_25 <- Sigma * beta_hat_w + one_minus_Sigma * beta_hat_b
 
-
-
-
-two_way_model <- lm(l_homicide ~ 0 + post + l_pop + l_income + factor(state) + factor(year),
-                          data = df_test_orig)
+two_way_model <- lm(l_homicide ~ 0 + post + l_pop + l_income + factor(state) + 
+                      factor(year),
+                    data = df_test_orig)
 
 beta_hat_dd_two_way <- two_way_model$coefficients["post"]
 names(beta_hat_dd_two_way) <- NULL
