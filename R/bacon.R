@@ -127,6 +127,10 @@ bacon <- function(formula,
 }
 
 #' Unpack Variable Names from Formula
+#' 
+#' @param formula 
+#' 
+#' @return a list with 3 elements: outcome_var, treated_var, control_vars
 unpack_variable_names <- function(formula) {
   outcome_var <- as.character(formula)[2]
   right_side_vars <- as.character(formula)[3]
@@ -139,6 +143,14 @@ unpack_variable_names <- function(formula) {
 }
 
 #' Rename Variables
+#' 
+#' @param data a data.frame
+#' @param id_var
+#' @param time_var
+#' @param outcome_var
+#' @param treated_var
+#' 
+#' @return data.frame with renmaed columns
 rename_vars <- function(data, id_var, time_var, outcome_var, treated_var) {
   colnames(data)[colnames(data) == id_var] <- "id"
   colnames(data)[colnames(data) == time_var] <- "time"
@@ -206,6 +218,13 @@ create_treatment_groups <- function(data, control_vars, return_merged_df = FALSE
   return(return_data)
 }
 
+#' Subset Data
+#' 
+#' @param data
+#' @param treated_group
+#' @param untreated_group
+#' 
+#' @return subsetted data.frame
 subset_data <- function(data, treated_group, untreated_group) {
   data <- data[data$treat_time %in% c(treated_group, untreated_group), ]
   if (treated_group < untreated_group) {
@@ -264,6 +283,10 @@ calculate_weights <- function(data,
 }
 
 #' Scale 2x2 Weights
+#' 
+#' @param two_by_twos
+#' 
+#' @return two_by_twos
 scale_weights <- function(two_by_twos) {
   sum_weight <- sum(two_by_twos$weight)
   two_by_twos$weight <- two_by_twos$weight/sum_weight
@@ -271,6 +294,11 @@ scale_weights <- function(two_by_twos) {
 }
 
 #' Calculate d_it and Variants
+#' 
+#' @param data 
+#' @param control_formula
+#' 
+#' @return data frame with new "p" variables
 calculate_ds <- function(data, control_formula) {
   
   #  Quoting:
@@ -300,6 +328,10 @@ calculate_ds <- function(data, control_formula) {
 }
 
 #' Calculate Sigma
+#' 
+#' @param data
+#' 
+#' @return Sigma: portion of DD estimate
 calculate_Sigma <- function(data) {
   # TODO Test that within + between = 1
   N <- nrow(data)
@@ -310,6 +342,10 @@ calculate_Sigma <- function(data) {
 }
 
 #' Calculate 1 - Sigma
+#' 
+#' @param data 
+#' 
+#' @return one_minus_Sigma
 calculate_one_minus_Sigma <- function(data) {
   N <- nrow(data)
   V_db <- var(data$d_kt_til)*(N - 1)/N
@@ -327,6 +363,11 @@ calculate_beta_hat_w <- function(data) {
   return(beta_hat_w)
 }
 
+#' Calculate between beta hat
+#' 
+#' @param data
+#' 
+#' @return beta_hat_b
 calculate_beta_hat_b <- function(data) {
   N <- nrow(data)
   C <- cov(data$outcome, data$d_kt_til)*(N - 1)/N
@@ -335,6 +376,14 @@ calculate_beta_hat_b <- function(data) {
   return(beta_hat_b)
 }
 
+#' Calculate Weights in Controlled Decomposition
+#' 
+#' @param data
+#' @param treated_group
+#' @param untreated_group
+#' @param V_db
+#' 
+#' @return s_kl
 calculate_weights_controled <- function(data, treated_group,
                                         untreated_group, V_db) {
   # TODO test: between 0-1? (ask him), and sum to 1
@@ -347,6 +396,12 @@ calculate_weights_controled <- function(data, treated_group,
   return(s_kl)
 }
 
+#' Calculate "p's"
+#' 
+#' @param data 
+#' @param control_formula
+#' 
+#' @return data with new p variables
 calculate_ps <- function(data, control_formula) {
   fit_treat <- lm(control_formula, data = data)
   data$p_it_til <- predict(fit_treat)
@@ -355,6 +410,11 @@ calculate_ps <- function(data, control_formula) {
   return(data)
 }
 
+#' Calculate VD_kl
+#' 
+#' @param data
+#' 
+#' @return VD_kl
 calculate_VD_kl <- function(data) {
   data$D_jt_til <- data$D_it - ave(data$D_it_til, data$treat_time) - ave(data$D_it_til, data$time)
   fit <- lm(D_jt_til ~ factor(id) + factor(time), data = data)
@@ -364,6 +424,11 @@ calculate_VD_kl <- function(data) {
   return(VD_kl)
 }
 
+#' Calculate Vp_bkl
+#' 
+#' @param data
+#' 
+#' @return Vp_bkl
 calculate_Vp_bkl <- function(data) {
   fit <- lm(data$p_jt_til ~ factor(id) + factor(time), 
             data = data)
@@ -372,12 +437,22 @@ calculate_Vp_bkl <- function(data) {
   Vp_bkl <- var(resid)*(N - 1)/N
 }
 
+#' Calculate beta_hat_22_kl
+#' 
+#' @param data
+#' 
+#' @return beta_hat_22_kl
 calculate_beta_hat_22_kl <- function(data) {
   fit <- lm(outcome ~ treated + factor(id) + factor(time), data = data)
   beta_hat_22_kl <- fit$coefficients["treated"]
   return(beta_hat_22_kl)
 }
 
+#' Calculate beta_hat_p_bkl
+#' 
+#' @param data
+#' 
+#' return beta_hat_p_bkl
 calculate_beta_hat_p_bkl <- function(data) {
   data$y_jt_bar <- ave(data$outcome, data$treat_time, data$time)
   fit <- lm(y_jt_bar ~ p_jt_bar + factor(id) + factor(time), data = data)
@@ -385,6 +460,11 @@ calculate_beta_hat_p_bkl <- function(data) {
   return(beta_hat_p_bkl)
 }
 
+#' Calculate beta_hat_d_bkl
+#' 
+#' @param data
+#' 
+#' @return beta_hat_d_bkl
 calculate_beta_hat_d_bkl <- function(data) {
   VD_kl <- calculate_VD_kl(data)
   beta_hat_22_kl <- calculate_beta_hat_22_kl(data)

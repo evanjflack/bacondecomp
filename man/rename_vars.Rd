@@ -6,6 +6,14 @@
 \usage{
 rename_vars(data, id_var, time_var, outcome_var, treated_var)
 }
+\arguments{
+\item{data}{a data.frame}
+
+\item{treated_var}{}
+}
+\value{
+data.frame with renmaed columns
+}
 \description{
 Rename Variables
 }

@@ -6,6 +6,12 @@
 \usage{
 scale_weights(two_by_twos)
 }
+\arguments{
+\item{two_by_twos}{}
+}
+\value{
+two_by_twos
+}
 \description{
 Scale 2x2 Weights
 }

@@ -6,6 +6,12 @@
 \usage{
 unpack_variable_names(formula)
 }
+\arguments{
+\item{formula}{}
+}
+\value{
+a list with 3 elements: outcome_var, treated_var, control_vars
+}
 \description{
 Unpack Variable Names from Formula
 }

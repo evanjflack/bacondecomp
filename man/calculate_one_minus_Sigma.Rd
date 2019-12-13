@@ -6,6 +6,12 @@
 \usage{
 calculate_one_minus_Sigma(data)
 }
+\arguments{
+\item{data}{}
+}
+\value{
+one_minus_Sigma
+}
 \description{
 Calculate 1 - Sigma
 }
