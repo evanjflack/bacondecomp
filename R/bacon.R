@@ -34,12 +34,7 @@ bacon <- function(formula,
                   data,
                   id_var,
                   time_var) {
-  
-  # data <- bacon::castle
-  # formula <- l_homicide ~ post + l_pop + l_income
-  # id_var <- "state"
-  # time_var <- "year"
-  
+
   # Unpack variable names and rename variables
   vars <- unpack_variable_names(formula)
   outcome_var <- vars$outcome_var
@@ -87,7 +82,7 @@ bacon <- function(formula,
       two_by_twos[i, "estimate"] <- estimate1
       two_by_twos[i, "weight"] <- weight1
     }
-    r_list <- list(two_by_twos = two_by_twos)
+    # r_list <- list(two_by_twos = two_by_twos)
   } else if (length(control_vars > 0)) {
     # Controled ----------------------------------------------------------------
     # Predict Treatment and calulate demeaned residuals
@@ -116,10 +111,10 @@ bacon <- function(formula,
       two_by_twos[i, "weight"] <- skl
       two_by_twos[i, "estimate"] <- beta_hat_db_kl
     }
-    r_list <- list(two_by_twos = two_by_twos, 
-                   beta_hat_w = beta_hat_w, 
-                   Sigma = Sigma)
   }
+  r_list <- list("beta_hat_w" = beta_hat_w,
+                 "Sigma" = Sigma,
+                 "two_by_twos" = two_by_twos)
   return(r_list)
 }
 
