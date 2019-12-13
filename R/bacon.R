@@ -41,7 +41,6 @@ bacon <- function(formula,
                   data,
                   id_var,
                   time_var) {
-  
   vars <- unpack_variable_names(formula)
   outcome_var <- vars$outcome_var
   treated_var <- vars$treated_var
@@ -94,7 +93,8 @@ bacon <- function(formula,
     # Controled ----------------------------------------------------------------
     # Predict Treatment and calulate demeaned residuals
     control_formula <- update(formula,
-                              paste0(treated_var, "~ . -", treated_var))
+                              paste0("treated ~ . + factor(time) + factor(id) -",
+                                     treated_var))
     data <- calculate_ds(data, control_formula)
     # Ca
     Sigma <- calculate_Sigma(data)
@@ -245,6 +245,16 @@ calculate_weights <- function(data,
 }
 
 calculate_ds <- function(data, control_formula) {
+  
+  ##
+  #  Quoting:
+  # To see how the controlled DD coefficient is identified first remove unit- and time-
+    # means(indicated by tildes) and then estimate a Frisch-Waugh regression that partials
+  # 𝑿𝑿�𝒊𝒊𝒂𝒂out of 𝐷𝐷�𝑖𝑖𝑖𝑖
+  
+  ##
+  
+  # Think we need to demean here, before hand
   # predict treatment
   fit_treat <- lm(control_formula, data = data)
   # residulals
@@ -281,14 +291,20 @@ calculate_one_minus_Sigma <- function(data) {
 }
 
 calculate_beta_hat_w <- function(data) {
-  # TODO test equation 25
   N <- nrow(data)
-  C <- cov(data$outcome, data$d_ikt_til)
+  C <- cov(data$outcome, data$d_ikt_til)*(N - 1)/N
   V_d <- var(data$d_ikt_til)*(N - 1)/N
   beta_hat_w <- C/V_d
   return(beta_hat_w)
 }
 
+calculate_beta_hat_d <- function(data) {
+  N <- nrow(data)
+  C <- cov(data$outcome, data$d_kt_til)*(N - 1)/N
+  V_d <- var(data$d_kt_til)*(N - 1)/N
+  beta_hat_d <- C/V_d
+  return(beta_hat_d)
+}
 
 calculate_weights_controled <- function(data, treated_group,
                                         untreated_group, V_db) {
@@ -301,5 +317,3 @@ calculate_weights_controled <- function(data, treated_group,
   s_kl <- (n_k + n_l)^2 * V_bkl/V_db
   return(s_kl)
 }
-
-
