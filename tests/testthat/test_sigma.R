@@ -19,7 +19,8 @@ treatment_group_calc <- create_treatment_groups(df_test,
 test_data <- treatment_group_calc$data
 # dummy control var
 control_formula <- update(formula,
-                          paste0("treated ~ . -", treated_var))
+                          paste0("treated ~ . + factor(time) + factor(id) -",
+                                 treated_var))
 # Calculate the Ds
 test_data <- calculate_ds(test_data, control_formula)
 
