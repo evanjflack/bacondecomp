@@ -66,7 +66,6 @@ bacon <- function(formula,
 
   # Uncontrolled ---------------------------------------------------------------
   if (length(control_vars) == 0) {
-    print("Uncontrolled")
     for (i in 1:nrow(two_by_twos)) {
       treated_group <- two_by_twos[i, "treated"]
       untreated_group <- two_by_twos[i, "untreated"]
@@ -90,7 +89,6 @@ bacon <- function(formula,
     
   } else if (length(control_vars) > 0) {
     # Controled ----------------------------------------------------------------
-    print("Controlled")
     # Predict Treatment and calulate demeaned residuals
     control_formula <- update(formula,
                               paste0("treated ~ . + factor(time) + factor(id) -",
@@ -103,7 +101,7 @@ bacon <- function(formula,
     beta_hat_w <- calculate_beta_hat_w(data)
 
     N <- nrow(data)
-    V_bd <- var(data$d_kt_til)*(N - 1)/N
+    V_db <- var(data$d_kt_til)*(N - 1)/N
 
     for (i in 1:nrow(two_by_twos)) {
       treated_group <- two_by_twos[i, "treated"]
@@ -111,8 +109,8 @@ bacon <- function(formula,
       data1 <- data[data$treat_time %in% c(treated_group, untreated_group), ]
       
       skl <- calculate_weights_controled(data1, treated_group, untreated_group,
-                                         V_bd)
-      beta_hat_db_kl <- calculate_beta_hat_db_kl(data, V_bd)
+                                         V_db)
+      beta_hat_db_kl <- calculate_beta_hat_db_kl(data1)
 
       two_by_twos[i, "weight"] <- skl
       two_by_twos[i, "estimate"] <- beta_hat_db_kl
@@ -383,12 +381,16 @@ calculate_beta_hat_p_bkl <- function(data) {
   return(beta_hat_p_bkl)
 }
 
-calculate_beta_hat_db_kl <- function(data, V_bd) {
+calculate_beta_hat_db_kl <- function(data) {
   VD_kl <- calculate_VD_kl(data)
   beta_hat_22_kl <- calculate_beta_hat_22_kl(data)
   Vp_bkl <- calculate_Vp_bkl(data)
   beta_hat_p_bkl <- calculate_beta_hat_p_bkl(data)
-  beta_hat_db_kl <- (VD_kl*beta_hat_22_kl - Vp_bkl*beta_hat_p_bkl)/V_bd
+  
+  N <- nrow(data)
+  V_db_kl <- var(data$d_kt_til)*(N - 1)/N
+  
+  beta_hat_kl <- (VD_kl*beta_hat_22_kl - Vp_bkl*beta_hat_p_bkl)/V_db_kl
 }
 
 
