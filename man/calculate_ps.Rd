@@ -9,10 +9,9 @@ calculate_ps(data, control_formula)
 \arguments{
 \item{data}{}
 
-\item{control_formula}{}
-}
-\value{
-data with new p variables
+\item{control_formula}{#' @return data with new p variables}
+
+\item{ca}{data.frame}
 }
 \description{
 Calculate "p's"

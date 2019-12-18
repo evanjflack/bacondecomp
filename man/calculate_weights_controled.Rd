@@ -7,10 +7,13 @@
 calculate_weights_controled(data, treated_group, untreated_group, V_db)
 }
 \arguments{
-\item{V_db}{}
-}
-\value{
-s_kl
+\item{treated_group}{integer}
+
+\item{untreated_group}{integer}
+
+\item{V_db}{numberurn s_kl}
+
+\item{t}{a data.frame}
 }
 \description{
 Calculate Weights in Controlled Decomposition

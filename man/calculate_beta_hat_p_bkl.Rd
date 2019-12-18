@@ -7,7 +7,10 @@
 calculate_beta_hat_p_bkl(data)
 }
 \arguments{
-\item{data}{return beta_hat_p_bkl}
+\item{data}{}
+}
+\value{
+beta_hat_p_bkl
 }
 \description{
 Calculate beta_hat_p_bkl

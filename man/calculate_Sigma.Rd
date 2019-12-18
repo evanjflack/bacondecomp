@@ -10,7 +10,7 @@ calculate_Sigma(data)
 \item{data}{}
 }
 \value{
-Sigma: portion of DD estimate
+Sigma
 }
 \description{
 Calculate Sigma

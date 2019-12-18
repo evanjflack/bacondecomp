@@ -4,7 +4,7 @@
 \alias{calculate_beta_hat_d_bkl}
 \title{Calculate beta_hat_d_bkl}
 \usage{
-calculate_beta_hat_d_bkl(data)
+calculate_beta_hat_d_bkl(data, treated_group, untreated_group)
 }
 \arguments{
 \item{data}{}

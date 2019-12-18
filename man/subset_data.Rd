@@ -7,7 +7,11 @@
 subset_data(data, treated_group, untreated_group)
 }
 \arguments{
-\item{untreated_group}{}
+\item{data}{a data.frame}
+
+\item{treated_group}{integer}
+
+\item{untreated_group}{interger}
 }
 \value{
 subsetted data.frame

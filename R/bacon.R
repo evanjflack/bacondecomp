@@ -117,7 +117,7 @@ bacon <- function(formula,
       skl <- calculate_weights_controled(data1, treated_group, untreated_group,
                                          V_db)
       
-      beta_hat_d_bkl <- calculate_beta_hat_d_bkl(data1, treated_group, untreated_group)
+      beta_hat_d_bkl <- calculate_beta_hat_d_bkl(data1)
       
       two_by_twos[i, "weight"] <- skl
       two_by_twos[i, "estimate"] <- beta_hat_d_bkl
@@ -151,10 +151,10 @@ unpack_variable_names <- function(formula) {
 #' Rename Variables
 #' 
 #' @param data a data.frame
-#' @param id_var
-#' @param time_var
-#' @param outcome_var
-#' @param treated_var
+#' @param id_var character
+#' @param time_var character
+#' @param outcome_var character
+#' @param treated_var character
 #' 
 #' @return data.frame with renmaed columns
 rename_vars <- function(data, id_var, time_var, outcome_var, treated_var) {
@@ -226,9 +226,9 @@ create_treatment_groups <- function(data, control_vars, return_merged_df = FALSE
 
 #' Subset Data
 #' 
-#' @param data
-#' @param treated_group
-#' @param untreated_group
+#' @param data a data.frame
+#' @param treated_group integer
+#' @param untreated_group interger
 #' 
 #' @return subsetted data.frame
 subset_data <- function(data, treated_group, untreated_group) {
@@ -385,11 +385,10 @@ calculate_beta_hat_b <- function(data) {
 #' Calculate Weights in Controlled Decomposition
 #' 
 #' @param data
-#' @param treated_group
-#' @param untreated_group
-#' @param V_db
-#' 
-#' @return s_kl
+#' @param t a data.frame
+#' @param treated_group integer
+#' @param untreated_group integer
+#' @param V_db numberurn s_kl
 calculate_weights_controled <- function(data, treated_group,
                                         untreated_group, V_db) {
   # TODO test: between 0-1? (ask him), and sum to 1
@@ -405,9 +404,8 @@ calculate_weights_controled <- function(data, treated_group,
 #' Calculate "p's"
 #' 
 #' @param data 
-#' @param control_formula
-#' 
-#' @return data with new p variables
+#' @param ca data.frame
+#' @param control_formula #' @return data with new p variables
 calculate_ps <- function(data, control_formula) {
   fit_treat <- lm(control_formula, data = data)
   data$p_it <- predict(fit_treat)
@@ -505,13 +503,21 @@ calculate_beta_hat_p_bkl <- function(data) {
 #' @param data
 #' 
 #' @return beta_hat_d_bkl
-calculate_beta_hat_d_bkl <- function(data, treated_group, untreated_group) {
-  VD_kl <- calculate_VD_kl(data, treated_group, untreated_group)
-  beta_hat_22_kl <- calculate_beta_hat_22_kl(data)
-  Vp_bkl <- calculate_Vp_bkl(data, treated_group, untreated_group)
-  beta_hat_p_bkl <- calculate_beta_hat_p_bkl(data)
-  
+# calculate_beta_hat_d_bkl <- function(data, treated_group, untreated_group) {
+#   VD_kl <- calculate_VD_kl(data, treated_group, untreated_group)
+#   beta_hat_22_kl <- calculate_beta_hat_22_kl(data)
+#   Vp_bkl <- calculate_Vp_bkl(data, treated_group, untreated_group)
+#   beta_hat_p_bkl <- calculate_beta_hat_p_bkl(data)
+#   
+#   N <- nrow(data)
+#   Vd_bkl <- var(data$d_kt_til)*(N - 1)/N
+#   beta_hat_d_bkl <- (VD_kl*beta_hat_22_kl - Vp_bkl*beta_hat_p_bkl)/Vd_bkl
+# }
+
+calculate_beta_hat_d_bkl <- function(data) {
   N <- nrow(data)
   Vd_bkl <- var(data$d_kt_til)*(N - 1)/N
-  beta_hat_d_bkl <- (VD_kl*beta_hat_22_kl - Vp_bkl*beta_hat_p_bkl)/Vd_bkl
+  C1 <- cov(data$outcome, data$D_it_til - data$p_jt_til)
+  beta_hat_d_bkl <- C1/Vd_bkl
+  return(beta_hat_d_bkl)
 }
