@@ -337,7 +337,7 @@ calculate_ds <- function(data, control_formula) {
 #' 
 #' @param data
 #' 
-#' @return Sigma: portion of DD estimate
+#' @return Sigma
 calculate_Sigma <- function(data) {
   # TODO Test that within + between = 1
   N <- nrow(data)
@@ -416,19 +416,7 @@ calculate_ps <- function(data, control_formula) {
   return(data)
 }
 
-#' Calculate VD_kl
-#' 
-#' @param data
-#' 
-#' @return VD_kl
-# calculate_VD_kl <- function(data) {
-#   data$D_jt_til <- data$D_it - ave(data$D_it_til, data$treat_time) - ave(data$D_it_til, data$time)
-#   fit <- lm(D_jt_til ~ factor(id) + factor(treat_time), data = data)
-#   resid <- fit$residuals
-#   N <- nrow(data)
-#   VD_kl <- var(resid)*(N - 1)/N
-#   return(VD_kl)
-# }
+# "By Hand" way
 calculate_VD_kl <- function(data, treated_group, untreated_group) {
   n_k <- sum(data$treat_time == treated_group)
   n_l <- sum(data$treat_time == untreated_group)
@@ -449,6 +437,17 @@ calculate_VD_kl <- function(data, treated_group, untreated_group) {
   return(VD_kl)
 }
 
+# "Regression" way
+# calculate_VD_kl <- function(data) {
+#   data$D_jt_til <- data$D_it - ave(data$D_it_til, data$treat_time) - ave(data$D_it_til, data$time)
+#   fit <- lm(D_jt_til ~ factor(id) + factor(treat_time), data = data)
+#   resid <- fit$residuals
+#   N <- nrow(data)
+#   VD_kl <- var(resid)*(N - 1)/N
+#   return(VD_kl)
+# }
+
+# regression way
 calculate_Vp_bkl <- function(data, treated_group, untreated_group) {
   n_k <- sum(data$treat_time == treated_group)
   n_l <- sum(data$treat_time == untreated_group)
@@ -469,11 +468,7 @@ calculate_Vp_bkl <- function(data, treated_group, untreated_group) {
   return(Vp_bkl)
 }
 
-#' Calculate Vp_bkl
-#' 
-#' @param data
-#' 
-#' @return Vp_bkl
+# "by hand" way
 # calculate_Vp_bkl <- function(data) {
 #   fit <- lm(data$p_jt_til ~ factor(id) + factor(treat_time), 
 #             data = data)
