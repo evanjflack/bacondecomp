@@ -117,12 +117,11 @@ bacon <- function(formula,
       skl <- calculate_weights_controled(data1, treated_group, untreated_group,
                                          V_db)
       
-      beta_hat_d_bkl <- calculate_beta_hat_d_bkl(data1, treated_group, untreated_group)
+      beta_hat_two_by_two <- calculate_beta_hat_22_kl(data1)
       
       two_by_twos[i, "weight"] <- skl
-      two_by_twos[i, "estimate"] <- beta_hat_d_bkl
+      two_by_twos[i, "estimate"] <- beta_hat_two_by_two
     }
-    
     two_by_twos <- scale_weights(two_by_twos)
     
     r_list <- list("beta_hat_w" = beta_hat_w,
@@ -514,4 +513,5 @@ calculate_beta_hat_d_bkl <- function(data, treated_group, untreated_group) {
   N <- nrow(data)
   Vd_bkl <- var(data$d_kt_til)*(N - 1)/N
   beta_hat_d_bkl <- (VD_kl*beta_hat_22_kl - Vp_bkl*beta_hat_p_bkl)/Vd_bkl
+  return(beta_hat_d_bkl)
 }
