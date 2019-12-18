@@ -55,8 +55,7 @@ ret_bacon <- bacon(formula,
                    time_var = "year")
 
 two_by_twos <- ret_bacon$two_by_twos
-beta_hat_b_two_by_twos <- weighted.mean(two_by_twos$estimate, 
-                                        two_by_twos$weight)
+beta_hat_b_two_by_twos <- sum(two_by_twos$estimate*two_by_twos$weight)
 
 test_that("Recover Two Way Coef Using EQN 23, pg 25", {
   expect_equal(beta_hat_dd_23, beta_hat_dd_two_way)
@@ -66,7 +65,15 @@ test_that("Recover Two Way Coef Using EQN 25, pg 26 WP", {
   expect_equal(beta_hat_dd_25, beta_hat_dd_two_way)
 })
 
-test_that("Correctect Beta Hat Within", {
+# This will never work - the weighted mean of beta_hat_2x2 doesn't equal
+# beta_hat_b. We need to include other terms
+test_that("Equation 26 Correct", {
   expect_equal(beta_hat_b, beta_hat_b_two_by_twos)
 })
 
+
+beta_hat_dd_final <- Sigma * beta_hat_w + one_minus_Sigma * sum(two_by_twos$estimate * two_by_twos$weight)
+
+test_that("Equation 27 Correct", {
+  expect_equal(beta_hat_dd_final, beta_hat_dd_two_way)
+})
