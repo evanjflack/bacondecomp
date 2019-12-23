@@ -23,9 +23,11 @@ test_that("Two-way FE recovered", {
 })
 
 # Controlled -------------------------------------------------------------------
-test_formula <- l_homicide ~ post + l_pop*l_income + police
+df <- bacon::castle[, c("state", "year", "l_homicide", "post", "l_income", 
+                        "l_pop")]
+test_formula <- l_homicide ~ post + l_pop + l_income
 ret_bacon <- bacon(test_formula, 
-                   data = bacon::castle,
+                   data = df,
                    id_var = "state",
                    time_var = "year")
 
