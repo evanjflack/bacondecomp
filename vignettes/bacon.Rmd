@@ -39,15 +39,15 @@ First we make sure that the weighted average of the decomposition equals the two
 ```{r twoway}
 fit_tw <- lm(l_homicide ~ post + factor(state) + factor(year), 
              data = bacon::castle)
-print(paste("Two-way FE estimate =", fit_tw$coefficients[2]))
+print(paste("Two-way FE estimate =", round(fit_tw$coefficients[2], 4)))
 ```
 
 Now, we plot each 2x2 estimate and its weight to see what is driving the result.
 
 ```{r plot}
 ggplot(df_bacon) +
-  aes(x = weight, y = estimate, shape = factor(type)) +
-  labs(x = "Weight", y = "Estimate", shape = "Type") +
+  aes(x = weight, y = estimate) +
+  labs(x = "Weight", y = "Estimate") +
   geom_point()
 ```
 

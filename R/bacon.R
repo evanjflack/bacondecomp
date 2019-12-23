@@ -3,14 +3,18 @@
 #' bacon() is a function that perfroms the Goodman-Bacon decomposition for
 #'  differences-in-differences with variation in treatment timing.
 #'
-#' @param formula a symbolic representation of the
-#'  model to be fitted.
+#' @param formula a symbolic representation of the model to be fitted. Must be 
+#'  of the form y ~ D + ., where D is the binary treatment indicator, and . can 
+#'  be any additional control variables. Do not include in the fixed effects in 
+#'  the formula.
 #' @param data a data.frame containing the variables in the model.
 #' @param id_var character, the name of id variable for units.
 #' @param time_var character, the name of time variable.
 #'
 #' @author Evan Flack
 #' @return data.frame of all 2x2 estimates and weights
+#' 
+#' @import stats
 #'
 #' @examples
 #' # Castle Doctrine -----------------------------------------------------------
@@ -126,7 +130,7 @@ bacon <- function(formula,
 
 #' Unpack Variable Names from Formula
 #' 
-#' @param formula 
+#' @param formula formula
 #' 
 #' @return a list with 3 elements: outcome_var, treated_var, control_vars
 unpack_variable_names <- function(formula) {
@@ -164,6 +168,7 @@ rename_vars <- function(data, id_var, time_var, outcome_var, treated_var) {
 #' in `bacon()`. i.e. columns are ["id", "time", "outcome", "treated"]
 #' @param return_merged_df Defaults to `FALSE` whether to return merged data
 #' as well as grid of treatment groups.
+#' @param control_vars list of control variables
 #'
 #' @return data.frame describing treatment groups and empty weight and estimate
 #' column set to 0.
@@ -281,22 +286,12 @@ calculate_weights <- function(data,
   return(weight1)
 }
 
-#' Scale 2x2 Weights
-#' 
-#' @param two_by_twos
-#' 
-#' @return two_by_twos
 scale_weights <- function(two_by_twos) {
   sum_weight <- sum(two_by_twos$weight)
   two_by_twos$weight <- two_by_twos$weight/sum_weight
   return(two_by_twos)
 }
 
-#' Calculate Sigma
-#' 
-#' @param data
-#' 
-#' @return Sigma
 calculate_Sigma <- function(data) {
   # TODO Test that within + between = 1
   N <- nrow(data)
@@ -306,11 +301,6 @@ calculate_Sigma <- function(data) {
   return(Sigma)
 }
 
-#' Calculate 1 - Sigma
-#' 
-#' @param data 
-#' 
-#' @return one_minus_Sigma
 calculate_one_minus_Sigma <- function(data) {
   N <- nrow(data)
   Vd_b <- var(data$d_kt_til)*(N - 1)/N
@@ -319,7 +309,6 @@ calculate_one_minus_Sigma <- function(data) {
   return(one_minus_Sigma)
 }
 
-#' Calculate beta_hat_w
 calculate_beta_hat_w <- function(data) {
   N <- nrow(data)
   C <- cov(data$outcome, data$d_ikt_til)*(N - 1)/N
@@ -328,11 +317,6 @@ calculate_beta_hat_w <- function(data) {
   return(beta_hat_w)
 }
 
-#' Calculate between beta hat
-#' 
-#' @param data
-#' 
-#' @return beta_hat_b
 calculate_beta_hat_b <- function(data) {
   N <- nrow(data)
   C <- cov(data$outcome, data$d_kt_til)*(N - 1)/N

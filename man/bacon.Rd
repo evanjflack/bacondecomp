@@ -8,7 +8,8 @@ bacon(formula, data, id_var, time_var)
 }
 \arguments{
 \item{formula}{a symbolic representation of the
-model to be fitted.}
+model to be fitted. Must be of the form y ~ D + ..., where D is the binary 
+treatment indicator.}
 
 \item{data}{a data.frame containing the variables in the model.}
 

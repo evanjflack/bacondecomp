@@ -7,7 +7,7 @@
 unpack_variable_names(formula)
 }
 \arguments{
-\item{formula}{}
+\item{formula}{formula}
 }
 \value{
 a list with 3 elements: outcome_var, treated_var, control_vars

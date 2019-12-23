@@ -10,6 +10,8 @@ create_treatment_groups(data, control_vars, return_merged_df = FALSE)
 \item{data}{dataset used to create groups - MUST obey naming convention used
 in `bacon()`. i.e. columns are ["id", "time", "outcome", "treated"]}
 
+\item{control_vars}{list of control variables}
+
 \item{return_merged_df}{Defaults to `FALSE` whether to return merged data
 as well as grid of treatment groups.}
 }
