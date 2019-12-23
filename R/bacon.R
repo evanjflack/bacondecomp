@@ -43,7 +43,7 @@ bacon <- function(formula,
   data <- rename_vars(data, id_var, time_var, outcome_var, treated_var)
   
   # Check for NA observations
-  nas <- sum(is.na(data[, c("id", "time", "outcome", "treated", control_vars)]))
+  nas <- sum(is.na(data[, c("id", "time", "outcome", "treated")]))
   if (nas > 0) {
     stop("NA observations")
   }
@@ -391,7 +391,7 @@ run_fwl <- function(data, control_formula) {
 }
 
 collapse_x_p <- function(data, control_formula) {
-  # group level Xs
+  # Group level Xs
   f1 <- update(control_formula, . ~ . - factor(time) - factor(id) - 1)
   control_data <- data.frame(model.matrix(f1, data = data))
   
@@ -459,8 +459,6 @@ calc_Vdp <- function(data) {
 calc_BD <- function(data, g_control_formula) {
   BD_formula <- update(g_control_formula, outcome ~ treated + . + factor(id) + factor(time))
   fit_BD <- lm(BD_formula, data = data)
-  # fit_BD <- lm(outcome ~ treated + g_l_income + g_l_pop + factor(time) + factor(id), 
-  #              data = data)
   BD <- fit_BD$coefficients["treated"]
   return(BD)
 }
@@ -500,7 +498,6 @@ calc_controlled_beta_weights <- function(data, g_control_formula) {
   BD <- calc_BD(data, g_control_formula)
   Bb <- calc_Bb(data)
   
-  # weight
   N <- nrow(data)
   
   s_kl <- calculate_s_kl(N, Rsq, VD, Vdp)
