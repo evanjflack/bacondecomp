@@ -28,13 +28,6 @@ ret_bacon <- bacon(l_homicide ~ post + l_pop + l_income,
                    id_var = "state",
                    time_var = "year")
 
-hi <- ret_bacon$two_by_twos
-
-library(ggplot2)
-ggplot(hi) + 
-  aes(x = weight, y = estimate) + 
-  geom_point()
-
 test_that("Controlled bacon returns working object", {
   expect_equal(class(ret_bacon), "list")
   expect_true(length(ret_bacon) == 3)

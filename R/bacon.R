@@ -109,6 +109,8 @@ bacon <- function(formula,
       untreated_group <- two_by_twos[i, "untreated"]
       data1 <- data[data$treat_time %in% c(treated_group, untreated_group), ]
       
+      
+      
       r_calc_VD <- calc_VD(data1)
       VD <- r_calc_VD$VD
       data1 <- r_calc_VD$data
@@ -128,11 +130,12 @@ bacon <- function(formula,
       
       # weight
       N <- nrow(data1)
-      finals <- N^2*((1 - Rsq)*VD + Vdp)
-      Beta <- ((1 - Rsq)*VD*BD + Vdp*Bb)/((1- Rsq)*VD + Vdp)
       
-      two_by_twos[i, "weight"] <- finals
-      two_by_twos[i, "estimate"] <- Beta
+      s_kl <- calculate_s_kl(N, Rsq, VD, Vdp)
+      beta_hat_d_bkl <- calculate_beta_hat_d_bkl(Rsq, VD, BD, Vdp, Bb)
+      
+      two_by_twos[i, "weight"] <- s_kl
+      two_by_twos[i, "estimate"] <- beta_hat_d_bkl
     }
     
     two_by_twos <- scale_weights(two_by_twos)
@@ -142,6 +145,34 @@ bacon <- function(formula,
                    "two_by_twos" = two_by_twos)
     return(r_list)
   }
+}
+
+calc_controlled_beta_weights <- function(data) {
+  r_calc_VD <- calc_VD(data)
+  VD <- r_calc_VD$VD
+  data <- r_calc_VD$data
+  
+  data <- partial_group_x(data, control_vars)
+  
+  r_calc_pgjtilde <- calc_pgjtile(data)
+  Rsq <- r_calc_pgjtilde$Rsq
+  data <- r_calc_pgjtilde$data
+  
+  r_calc_Vdp <- calc_Vdp(data1)
+  Vdp <- r_calc_Vdp$Vdp
+  data1 <- r_calc_Vdp$data
+  
+  BD <- calc_BD(data1)
+  Bb <- calc_Bb(data1)
+  
+  # weight
+  N <- nrow(data1)
+  
+  s_kl <- calculate_s_kl(N, Rsq, VD, Vdp)
+  beta_hat_d_bkl <- calculate_beta_hat_d_bkl(Rsq, VD, BD, Vdp, Bb)
+  
+  r_list <- list(s_kl = s_kl, beta_hat_d_bkl = beta_hat_d_bkl)
+  return(r_list)
 }
 
 
@@ -214,6 +245,16 @@ calc_Bb <- function(data) {
   return(Bb)
 }
 
+calculate_beta_hat_d_bkl <- function(Rsq, VD, BD, Vdp, Bb) {
+  beta_hat_d_bkl <- ((1 - Rsq)*VD*BD + Vdp*Bb)/((1- Rsq)*VD + Vdp)
+  return(beta_hat_d_bkl)
+}
+
+calculate_s_kl <- function(N, Rsq, VD, Vdp) {
+  s_kl <- N^2*((1 - Rsq)*VD + Vdp)
+  return(s_kl)
+}
+
 #' Unpack Variable Names from Formula
 #' 
 #' @param formula 
@@ -246,6 +287,7 @@ rename_vars <- function(data, id_var, time_var, outcome_var, treated_var) {
   colnames(data)[colnames(data) == treated_var] <- "treated"
   return(data)
 }
+
 
 #' Create Grid of Treatment Groups
 #'
@@ -420,7 +462,6 @@ calculate_dps <- function(data, control_formula) {
   return(data)
 }
 
-
 #' Calculate Sigma
 #' 
 #' @param data
@@ -470,112 +511,3 @@ calculate_beta_hat_b <- function(data) {
   return(beta_hat_b)
 }
 
-#' Calculate Weights in Controlled Decomposition
-#' 
-#' @param data
-#' @param treated_group integer
-#' @param untreated_group integer
-#' @param V_db numberurn s_kl
-calculate_weights_controled <- function(data, treated_group,
-                                        untreated_group, Vd_b) {
-  # TODO test: between 0-1? (ask him), and sum to 1
-  # Treated vs untreated
-  n_k <- sum(data$treat_time == treated_group)
-  n_l <- sum(data$treat_time == untreated_group)
-  N <- nrow(data)
-  Vd_bkl <- var(data$d_kt_til)*(N - 1)/N # this is the V(d_kt) but only for these subgroups
-  s_kl <- (n_k + n_l)^2 * Vd_bkl/Vd_b
-  return(s_kl)
-}
-
-calculate_beta_hat_d_bkl <- function(data) {
-  N <- nrow(data)
-  Vd_bkl <- var(data$d_kt_til)*(N - 1)/N
-  C1 <- cov(data$outcome, data$D_jt_til - data$p_jt_til)
-  beta_hat_d_bkl <- C1/Vd_bkl
-  
-  return(beta_hat_d_bkl)
-}
-
-# calculate_VD_kl <- function(data, treated_group, untreated_group) {
-#   n_k <- sum(data$treat_time == treated_group)
-#   n_l <- sum(data$treat_time == untreated_group)
-#   
-#   D_bar_k <- mean(data[data$treat_time == treated_group, "treated"])
-#   D_bar_l <- mean(data[data$treat_time == untreated_group, "treated"])
-#   
-#   sum_val <- 0
-#   for (t in unique(data$time)) {
-#     D_bar_kt <- mean(data[data$treat_time == treated_group & data$time == t, "treated"])
-#     D_bar_lt <- mean(data[data$treat_time == untreated_group & data$time == t, "treated"])
-#     val <- ((D_bar_kt - D_bar_k) - (D_bar_lt - D_bar_l))^2
-#     sum_val = sum_val + val
-#   }
-#   capT <- length(unique(data$time))
-#   adj <- (n_k*n_l)/((n_k + n_l)^2)
-#   VD_kl <- adj*(1/capT)*sum_val
-#   return(VD_kl)
-# }
-
-# "Regression" way
-# calculate_VD_kl <- function(data) {
-#   data$D_jt_til <- data$D_it - ave(data$D_it_til, data$treat_time) - ave(data$D_it_til, data$time)
-#   fit <- lm(D_jt_til ~ factor(id) + factor(treat_time), data = data)
-#   resid <- fit$residuals
-#   N <- nrow(data)
-#   VD_kl <- var(resid)*(N - 1)/N
-#   return(VD_kl)
-# }
-
-# calculate_Vp_bkl <- function(data, treated_group, untreated_group) {
-#   n_k <- sum(data$treat_time == treated_group)
-#   n_l <- sum(data$treat_time == untreated_group)
-#   
-#   p_bar_k <- mean(data[data$treat_time == treated_group, "p_it"])
-#   p_bar_l <- mean(data[data$treat_time == untreated_group, "p_it"])
-#   
-#   sum_val <- 0
-#   for (t in unique(data$time)) {
-#     p_bar_kt <- mean(data[data$treat_time == treated_group & data$time == t, "p_it"])
-#     p_bar_lt <- mean(data[data$treat_time == untreated_group & data$time == t, "p_it"])
-#     val <- ((p_bar_kt - p_bar_k) - (p_bar_lt - p_bar_l))^2
-#     sum_val = sum_val + val
-#   }
-#   capT <- length(unique(data$time))
-#   adj <- (n_k*n_l)/((n_k + n_l)^2)
-#   Vp_bkl <- adj*(1/capT)*sum_val
-#   return(Vp_bkl)
-# }
-
-# "by hand" way
-# calculate_Vp_bkl <- function(data) {
-#   fit <- lm(data$p_jt_til ~ factor(id) + factor(treat_time), 
-#             data = data)
-#   resid <- fit$residuals
-#   N <- nrow(data)
-#   Vp_bkl <- var(resid)*(N - 1)/N
-# }
-
-# calculate_beta_hat_22_kl <- function(data) {
-#   fit <- lm(outcome ~ treated + factor(id) + factor(time), data = data)
-#   beta_hat_22_kl <- fit$coefficients["treated"]
-#   return(beta_hat_22_kl)
-# }
-
-# calculate_beta_hat_p_bkl <- function(data) {
-#   data$y_jt_bar <- ave(data$outcome, data$treat_time, data$time)
-#   fit <- lm(y_jt_bar ~ p_jt_bar + factor(id) + factor(time), data = data)
-#   beta_hat_p_bkl <- fit$coefficients["p_jt_bar"]
-#   return(beta_hat_p_bkl)
-# }
-
-# calculate_beta_hat_d_bkl <- function(data, treated_group, untreated_group) {
-#   VD_kl <- calculate_VD_kl(data, treated_group, untreated_group)
-#   beta_hat_22_kl <- calculate_beta_hat_22_kl(data)
-#   Vp_bkl <- calculate_Vp_bkl(data, treated_group, untreated_group)
-#   beta_hat_p_bkl <- calculate_beta_hat_p_bkl(data)
-#   
-#   N <- nrow(data)
-#   Vd_bkl <- var(data$d_kt_til)*(N - 1)/N
-#   beta_hat_d_bkl <- (VD_kl*beta_hat_22_kl - Vp_bkl*beta_hat_p_bkl)/Vd_bkl
-# }
