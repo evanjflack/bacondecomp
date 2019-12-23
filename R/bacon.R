@@ -72,15 +72,8 @@ bacon <- function(formula,
       
       data1 <- subset_data(data, treated_group, untreated_group)
       
-      weight1 <- calculate_weights(data = data1,
-                                   treated_group = treated_group,
-                                   untreated_group = untreated_group)
       
-      estimate1 <- stats::lm(outcome ~ treated + factor(time) + factor(id),
-                             data = data1)$coefficients[2]
       
-      two_by_twos[i, "estimate"] <- estimate1
-      two_by_twos[i, "weight"] <- weight1
     }
     
     two_by_twos <- scale_weights(two_by_twos)
@@ -101,18 +94,38 @@ bacon <- function(formula,
     N <- nrow(data)
     Vd_b <- var(data$d_kt_til)*(N - 1)/N
     
+    data <- run_fwl(data, control_formula)
+    data <- collapse_x_p(data, control_vars)
+    
     for (i in 1:nrow(two_by_twos)) {
       treated_group <- two_by_twos[i, "treated"]
       untreated_group <- two_by_twos[i, "untreated"]
       data1 <- data[data$treat_time %in% c(treated_group, untreated_group), ]
       
-      skl <- calculate_weights_controled(data1, treated_group, untreated_group,
-                                         Vd_b)
+      r_calc_VD <- calc_VD(data1)
+      VD <- r_calc_VD$VD
+      data1 <- r_calc_VD$data
       
-      beta_hat_d_bkl <- calculate_beta_hat_d_bkl(data1)
+      data1 <- partial_group_x(data1, control_vars)
       
-      two_by_twos[i, "weight"] <- skl
-      two_by_twos[i, "estimate"] <- beta_hat_d_bkl
+      r_calc_pgjtilde <- calc_pgjtile(data1)
+      Rsq <- r_calc_pgjtilde$Rsq
+      data1 <- r_calc_pgjtilde$data
+      
+      r_calc_Vdp <- calc_Vdp(data1)
+      Vdp <- r_calc_Vdp$Vdp
+      data1 <- r_calc_Vdp$data
+      
+      BD <- calc_BD(data1)
+      Bb <- calc_Bb(data1)
+      
+      # weight
+      finals <- N^2*((1 - Rsq)*VD + Vdp)
+      Beta <- ((1 - Rsq)*VD*BD + Vdp*Bb)/((1- Rsq)*VD + Vdp)
+      
+    
+      two_by_twos[i, "weight"] <- finals
+      two_by_twos[i, "estimate"] <- Beta
     }
     
     # two_by_twos <- scale_weights(two_by_twos)
@@ -122,6 +135,75 @@ bacon <- function(formula,
                    "two_by_twos" = two_by_twos)
     return(r_list)
   }
+}
+
+
+# Frisch-Waugh-Locell Regression
+# Predict Treatment and calulate demeaned residuals
+run_fwl <- function(data, control_formula) {
+  fit_fwl <- lm(control_formula, data = data)
+  data$p <- predict(fit_fwl)
+  data$d <- fit_fwl$residuals
+  return(data)
+}
+
+collapse_x_p <- function(data, control_vars) {
+  # Collapse X's and p to group/year level
+  for (v in c("p", control_vars)) {
+    print(v)
+    data[, paste0("g_", v)] <-  ave(data[, v], data$treat_time, data$time)
+  }
+  return(data)
+}
+
+calc_VD <- function(data) {
+  fit_D <- lm(treated ~ factor(id) + factor(time), data = data)
+  data$Dtilde <- fit_D$residuals
+  N <- nrow(data)
+  VD <- var(data$Dtilde)*(N - 1)/N
+  r_list <- list(data = data, VD = VD)
+  return(r_list)
+}
+
+partial_group_x <- function(data, control_vars) {
+  g_vars <- paste0("g_", control_vars)
+  for (v in g_vars) {
+    g_formula <- as.formula(paste0(v, " ~ factor(id) + factor(time)"))
+    fit_g <- lm(g_formula, data = data)
+    data[, paste0("p_", v)] <- fit_g$residuals
+  }
+  return(data)
+}
+
+calc_pgjtile <- function(data) {
+  fit_pgj <- lm(Dtilde ~ g_l_income + g_l_pop, data = data)
+  data$pgjtilde <- predict(fit_pgj)
+  Rsq <- summary(fit_pgj)$r.squared
+  r_list <- list(data = data, Rsq = Rsq)
+  return(r_list)
+}
+
+calc_Vdp <- function(data) {
+  fit_p <- lm(g_p ~ factor(id) + factor(time), data = data)
+  data$ptilde <- predict(fit_p)
+  data$dp <- data$pgjtilde - data$ptilde
+  Vdp <- var(data$dp)*(N - 1)/N
+  r_list <- list(data = data, Vdp = Vdp)
+  return(r_list)
+}
+
+calc_BD <- function(data) {
+  fit_BD <- lm(outcome ~ treated + g_l_income + g_l_pop + factor(time) + factor(id), 
+               data = data)
+  BD <- fit_BD$coefficients["treated"]
+  return(BD)
+}
+
+calc_Bb <- function(data) {
+  fit_Bb <- lm(outcome ~ dp + factor(time) + factor(id), 
+               data = data)
+  Bb <- fit_Bb$coefficients["dp"]
+  return(Bb)
 }
 
 #' Unpack Variable Names from Formula
