@@ -98,41 +98,19 @@ bacon <- function(formula,
     Sigma <- calculate_Sigma(data)
     beta_hat_w <- calculate_beta_hat_w(data)
     
-    N <- nrow(data)
-    Vd_b <- var(data$d_kt_til)*(N - 1)/N
-    
     data <- run_fwl(data, control_formula)
-    data <- collapse_x_p(data, control_vars)
+    r_collapse_x_p <- collapse_x_p(data, control_formula)
+    data <- r_collapse_x_p$data
+    g_control_formula <- r_collapse_x_p$g_control_formula
     
     for (i in 1:nrow(two_by_twos)) {
       treated_group <- two_by_twos[i, "treated"]
       untreated_group <- two_by_twos[i, "untreated"]
       data1 <- data[data$treat_time %in% c(treated_group, untreated_group), ]
       
-      
-      
-      r_calc_VD <- calc_VD(data1)
-      VD <- r_calc_VD$VD
-      data1 <- r_calc_VD$data
-      
-      data1 <- partial_group_x(data1, control_vars)
-      
-      r_calc_pgjtilde <- calc_pgjtile(data1)
-      Rsq <- r_calc_pgjtilde$Rsq
-      data1 <- r_calc_pgjtilde$data
-      
-      r_calc_Vdp <- calc_Vdp(data1)
-      Vdp <- r_calc_Vdp$Vdp
-      data1 <- r_calc_Vdp$data
-      
-      BD <- calc_BD(data1)
-      Bb <- calc_Bb(data1)
-      
-      # weight
-      N <- nrow(data1)
-      
-      s_kl <- calculate_s_kl(N, Rsq, VD, Vdp)
-      beta_hat_d_bkl <- calculate_beta_hat_d_bkl(Rsq, VD, BD, Vdp, Bb)
+      weight_est <- calc_controlled_beta_weights(data1, g_control_formula)
+      s_kl <- weight_est$s_kl
+      beta_hat_d_bkl <- weight_est$beta_hat_d_bkl
       
       two_by_twos[i, "weight"] <- s_kl
       two_by_twos[i, "estimate"] <- beta_hat_d_bkl
@@ -145,114 +123,6 @@ bacon <- function(formula,
                    "two_by_twos" = two_by_twos)
     return(r_list)
   }
-}
-
-calc_controlled_beta_weights <- function(data) {
-  r_calc_VD <- calc_VD(data)
-  VD <- r_calc_VD$VD
-  data <- r_calc_VD$data
-  
-  data <- partial_group_x(data, control_vars)
-  
-  r_calc_pgjtilde <- calc_pgjtile(data)
-  Rsq <- r_calc_pgjtilde$Rsq
-  data <- r_calc_pgjtilde$data
-  
-  r_calc_Vdp <- calc_Vdp(data1)
-  Vdp <- r_calc_Vdp$Vdp
-  data1 <- r_calc_Vdp$data
-  
-  BD <- calc_BD(data1)
-  Bb <- calc_Bb(data1)
-  
-  # weight
-  N <- nrow(data1)
-  
-  s_kl <- calculate_s_kl(N, Rsq, VD, Vdp)
-  beta_hat_d_bkl <- calculate_beta_hat_d_bkl(Rsq, VD, BD, Vdp, Bb)
-  
-  r_list <- list(s_kl = s_kl, beta_hat_d_bkl = beta_hat_d_bkl)
-  return(r_list)
-}
-
-
-# Frisch-Waugh-Locell Regression
-# Predict Treatment and calulate demeaned residuals
-run_fwl <- function(data, control_formula) {
-  fit_fwl <- lm(control_formula, data = data)
-  data$p <- predict(fit_fwl)
-  data$d <- fit_fwl$residuals
-  return(data)
-}
-
-collapse_x_p <- function(data, control_vars) {
-  # Collapse X's and p to group/year level
-  for (v in c("p", control_vars)) {
-    print(v)
-    data[, paste0("g_", v)] <-  ave(data[, v], data$treat_time, data$time)
-  }
-  return(data)
-}
-
-calc_VD <- function(data) {
-  fit_D <- lm(treated ~ factor(id) + factor(time), data = data)
-  data$Dtilde <- fit_D$residuals
-  N <- nrow(data)
-  VD <- var(data$Dtilde)*(N - 1)/N
-  r_list <- list(data = data, VD = VD)
-  return(r_list)
-}
-
-partial_group_x <- function(data, control_vars) {
-  g_vars <- paste0("g_", control_vars)
-  for (v in g_vars) {
-    g_formula <- as.formula(paste0(v, " ~ factor(id) + factor(time)"))
-    fit_g <- lm(g_formula, data = data)
-    data[, paste0("p_", v)] <- fit_g$residuals
-  }
-  return(data)
-}
-
-calc_pgjtile <- function(data) {
-  fit_pgj <- lm(Dtilde ~ p_g_l_income + p_g_l_pop, data = data)
-  data$pgjtilde <- predict(fit_pgj)
-  Rsq <- summary(fit_pgj)$r.squared
-  r_list <- list(data = data, Rsq = Rsq)
-  return(r_list)
-}
-
-calc_Vdp <- function(data) {
-  N <- nrow(data)
-  fit_p <- lm(g_p ~ factor(id) + factor(time), data = data)
-  data$ptilde <- fit_p$residuals
-  data$dp <- data$pgjtilde - data$ptilde
-  Vdp <- var(data$dp)*(N - 1)/N
-  r_list <- list(data = data, Vdp = Vdp)
-  return(r_list)
-}
-
-calc_BD <- function(data) {
-  fit_BD <- lm(outcome ~ treated + g_l_income + g_l_pop + factor(time) + factor(id), 
-               data = data)
-  BD <- fit_BD$coefficients["treated"]
-  return(BD)
-}
-
-calc_Bb <- function(data) {
-  fit_Bb <- lm(outcome ~ dp + factor(time) + factor(id), 
-               data = data)
-  Bb <- fit_Bb$coefficients["dp"]
-  return(Bb)
-}
-
-calculate_beta_hat_d_bkl <- function(Rsq, VD, BD, Vdp, Bb) {
-  beta_hat_d_bkl <- ((1 - Rsq)*VD*BD + Vdp*Bb)/((1- Rsq)*VD + Vdp)
-  return(beta_hat_d_bkl)
-}
-
-calculate_s_kl <- function(N, Rsq, VD, Vdp) {
-  s_kl <- N^2*((1 - Rsq)*VD + Vdp)
-  return(s_kl)
 }
 
 #' Unpack Variable Names from Formula
@@ -511,3 +381,131 @@ calculate_beta_hat_b <- function(data) {
   return(beta_hat_b)
 }
 
+# Frisch-Waugh-Lowell Regression
+# Predict Treatment and calulate demeaned residuals
+run_fwl <- function(data, control_formula) {
+  fit_fwl <- lm(control_formula, data = data)
+  data$p <- predict(fit_fwl)
+  data$d <- fit_fwl$residuals
+  return(data)
+}
+
+collapse_x_p <- function(data, control_formula) {
+  # group level Xs
+  f1 <- update(control_formula, . ~ . - factor(time) - factor(id) - 1)
+  control_data <- data.frame(model.matrix(f1, data = data))
+  
+  my_ave <- function(x, data) {
+    ave(x, data$treat_time, data$time)
+  }
+  
+  g_control_data <- data.frame(sapply(control_data, my_ave, data))
+  colnames(g_control_data) <- paste0("g_", colnames(g_control_data))
+  
+  # Group level p
+  data$g_p <- ave(data$p, data$treat_time, data$time)
+  data <- cbind(data, g_control_data)
+  
+  g_control_formula <- as.formula(paste("~", paste(colnames(g_control_data), collapse = " + ")))
+  
+  r_list <- list(data = data, g_control_formula = g_control_formula)
+  
+  return(r_list)
+}
+
+calc_VD <- function(data) {
+  fit_D <- lm(treated ~ factor(id) + factor(time), data = data)
+  data$Dtilde <- fit_D$residuals
+  N <- nrow(data)
+  VD <- var(data$Dtilde)*(N - 1)/N
+  r_list <- list(data = data, VD = VD)
+  return(r_list)
+}
+
+partial_group_x <- function(data, g_control_formula) {
+  g_vars <- unlist(strsplit(as.character(g_control_formula)[2], " \\+ "))
+  for (v in g_vars) {
+    g_formula <- as.formula(paste0(v, " ~ factor(id) + factor(time)"))
+    fit_g <- lm(g_formula, data = data)
+    data[, paste0("p_", v)] <- fit_g$residuals
+  }
+  return(data)
+}
+
+calc_pgjtile <- function(data, g_control_formula) {
+  g_vars <- unlist(strsplit(as.character(g_control_formula)[2], " \\+ "))
+  p_g_vars <- paste0("p_", g_vars)
+  
+  p_g_control_formula <- formula(paste("Dtilde ~", paste(p_g_vars, 
+                                                         collapse = " + ")))
+  
+  fit_pgj <- lm(p_g_control_formula, data = data)
+  data$pgjtilde <- predict(fit_pgj)
+  Rsq <- summary(fit_pgj)$r.squared
+  r_list <- list(data = data, Rsq = Rsq)
+  return(r_list)
+}
+
+calc_Vdp <- function(data) {
+  N <- nrow(data)
+  fit_p <- lm(g_p ~ factor(id) + factor(time), data = data)
+  data$ptilde <- fit_p$residuals
+  data$dp <- data$pgjtilde - data$ptilde
+  Vdp <- var(data$dp)*(N - 1)/N
+  r_list <- list(data = data, Vdp = Vdp)
+  return(r_list)
+}
+
+calc_BD <- function(data, g_control_formula) {
+  BD_formula <- update(g_control_formula, outcome ~ treated + . + factor(id) + factor(time))
+  fit_BD <- lm(BD_formula, data = data)
+  # fit_BD <- lm(outcome ~ treated + g_l_income + g_l_pop + factor(time) + factor(id), 
+  #              data = data)
+  BD <- fit_BD$coefficients["treated"]
+  return(BD)
+}
+
+calc_Bb <- function(data) {
+  fit_Bb <- lm(outcome ~ dp + factor(time) + factor(id), 
+               data = data)
+  Bb <- fit_Bb$coefficients["dp"]
+  return(Bb)
+}
+
+calculate_beta_hat_d_bkl <- function(Rsq, VD, BD, Vdp, Bb) {
+  beta_hat_d_bkl <- ((1 - Rsq)*VD*BD + Vdp*Bb)/((1- Rsq)*VD + Vdp)
+  return(beta_hat_d_bkl)
+}
+
+calculate_s_kl <- function(N, Rsq, VD, Vdp) {
+  s_kl <- N^2*((1 - Rsq)*VD + Vdp)
+  return(s_kl)
+}
+
+calc_controlled_beta_weights <- function(data, g_control_formula) {
+  r_calc_VD <- calc_VD(data)
+  VD <- r_calc_VD$VD
+  data <- r_calc_VD$data
+  
+  data <- partial_group_x(data, g_control_formula)
+  
+  r_calc_pgjtilde <- calc_pgjtile(data, g_control_formula)
+  Rsq <- r_calc_pgjtilde$Rsq
+  data <- r_calc_pgjtilde$data
+  
+  r_calc_Vdp <- calc_Vdp(data)
+  Vdp <- r_calc_Vdp$Vdp
+  data <- r_calc_Vdp$data
+  
+  BD <- calc_BD(data, g_control_formula)
+  Bb <- calc_Bb(data)
+  
+  # weight
+  N <- nrow(data)
+  
+  s_kl <- calculate_s_kl(N, Rsq, VD, Vdp)
+  beta_hat_d_bkl <- calculate_beta_hat_d_bkl(Rsq, VD, BD, Vdp, Bb)
+  
+  r_list <- list(s_kl = s_kl, beta_hat_d_bkl = beta_hat_d_bkl)
+  return(r_list)
+}
