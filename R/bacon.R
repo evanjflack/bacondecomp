@@ -130,7 +130,7 @@ bacon <- function(formula,
 
 #' Unpack Variable Names from Formula
 #' 
-#' @param formula formula
+#' @param formula formula call from bacon.
 #' 
 #' @return a list with 3 elements: outcome_var, treated_var, control_vars
 unpack_variable_names <- function(formula) {

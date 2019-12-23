@@ -7,9 +7,10 @@
 bacon(formula, data, id_var, time_var)
 }
 \arguments{
-\item{formula}{a symbolic representation of the
-model to be fitted. Must be of the form y ~ D + ..., where D is the binary 
-treatment indicator.}
+\item{formula}{a symbolic representation of the model to be fitted. Must be 
+of the form y ~ D + ., where D is the binary treatment indicator, and . can 
+be any additional control variables. Do not include in the fixed effects in 
+the formula.}
 
 \item{data}{a data.frame containing the variables in the model.}
 
