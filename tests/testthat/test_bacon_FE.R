@@ -23,7 +23,7 @@ test_that("Two-way FE recovered", {
 })
 
 # Controlled -------------------------------------------------------------------
-test_formula <- l_homicide ~ post + l_pop + poly(l_income, 2)
+test_formula <- l_homicide ~ post + l_pop*l_income + police
 ret_bacon <- bacon(test_formula, 
                    data = bacon::castle,
                    id_var = "state",
@@ -42,8 +42,9 @@ Sigma <- ret_bacon$Sigma
 two_way_bacon_coef_cont <- Sigma*beta_hat_w + (1 - Sigma)*beta_hat_b
 
 # Two way FE estimate
-two_way_fe_cont <- lm(l_homicide ~ post + l_pop + poly(l_income, 2) + factor(state) + 
-                        factor(year), data = bacon::castle)
+two_way_test_formula <- update(test_formula, 
+                               . ~ . + factor(state) + factor(year)) 
+two_way_fe_cont <- lm(two_way_test_formula, data = bacon::castle)
 two_way_fe_coef_cont <- two_way_fe_cont$coefficients["post"]
 names(two_way_fe_coef_cont) <- NULL
 

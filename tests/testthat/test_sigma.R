@@ -1,7 +1,6 @@
 library(bacon)
 
 # These tests 
-
 df_test_orig <- bacon::castle
 formula <- l_homicide ~ post + l_pop + l_income
 id_var <- "state"
@@ -24,7 +23,7 @@ control_formula <- update(formula,
                           paste0("treated ~ .  + factor(time) + factor(id) -",
                                  treated_var))
 # Calculate the Ds
-test_data <- calculate_dps(test_data, control_formula)
+test_data <- run_fwl(test_data, control_formula)
 
 # Calculate Sigma
 Sigma <- calculate_Sigma(test_data)
@@ -70,5 +69,5 @@ two_by_twos <- ret_bacon$two_by_twos
 beta_hat_b_two_by_twos <- weighted.mean(two_by_twos$estimate, two_by_twos$weight)
 
 test_that("Equation 26 Correct", {
-  expect_equal(0, (beta_hat_b - beta_hat_b_two_by_twos)/(1- Sigma))
+  expect_equal(beta_hat_b, beta_hat_b_two_by_twos)
 })

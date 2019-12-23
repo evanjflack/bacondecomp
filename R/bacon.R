@@ -61,9 +61,6 @@ bacon <- function(formula,
   two_by_twos <- treatment_group_calc$two_by_twos
   data <- treatment_group_calc$data
   
-  # First period in the panel
-  first_period <- min(data$time)
-  
   # Uncontrolled ---------------------------------------------------------------
   if (length(control_vars) == 0) {
     for (i in 1:nrow(two_by_twos)) {
@@ -94,11 +91,13 @@ bacon <- function(formula,
                               paste0("treated ~ . + factor(time) + factor(id) -",
                                      treated_var))
     
-    data <- calculate_dps(data, control_formula)
+    # Runs FWL regressions
+    data <- run_fwl(data, control_formula)
+    
+    # Within stuff
     Sigma <- calculate_Sigma(data)
     beta_hat_w <- calculate_beta_hat_w(data)
     
-    data <- run_fwl(data, control_formula)
     r_collapse_x_p <- collapse_x_p(data, control_formula)
     data <- r_collapse_x_p$data
     g_control_formula <- r_collapse_x_p$g_control_formula
@@ -293,45 +292,6 @@ scale_weights <- function(two_by_twos) {
   return(two_by_twos)
 }
 
-#' Calculate d_it and Variants
-#' 
-#' @param data 
-#' @param control_formula
-#' 
-#' @return data frame with new "p" variables
-calculate_dps <- function(data, control_formula) {
-  
-  #  Quoting:
-  # To see how the controlled DD coefficient is identified first remove unit- and time-
-  # means(indicated by tildes) and then estimate a Frisch-Waugh regression that partials
-  # 𝑿𝑿�𝒊𝒊𝒂𝒂out of 𝐷𝐷�𝑖𝑖𝑖𝑖
-  
-  # Think we need to demean here, before hand
-  # predict treatment
-  fit_treat <- lm(control_formula, data = data)
-  # residulals
-  data$d_it <- fit_treat$residuals
-  # demean residulas
-  data$d_i_bar <- ave(data$d_it, data$id)
-  data$d_t_bar <- ave(data$d_it, data$time)
-  data$d_bar_bar <- mean(data$d_it)
-  data$d_it_til <- data$d_it - data$d_i_bar - data$d_t_bar + data$d_bar_bar
-  
-  data$d_kt_bar <- ave(data$d_it, data$treat_time, data$time)
-  data$d_k_bar <- ave(data$d_it, data$treat_time)
-  data$d_ikt_til <- data$d_it - data$d_i_bar - (data$d_kt_bar - data$d_k_bar)
-  data$d_kt_til <- (data$d_kt_bar - data$d_k_bar) - (data$d_t_bar - data$d_bar_bar)
-  
-  # Demean the 
-  data$D_it_til <- data$treated - ave(data$treated, data$id) - ave(data$treated, data$time) + mean(data$treated)
-  data$D_jt_til <- data$D_it_til - ave(data$D_it_til, data$treat_time)
-  
-  data$p_it_til <- predict(fit_treat)
-  data$p_jt_til <- data$p_it_til - ave(data$p_it_til, data$treat_time)
-  
-  return(data)
-}
-
 #' Calculate Sigma
 #' 
 #' @param data
@@ -387,6 +347,19 @@ run_fwl <- function(data, control_formula) {
   fit_fwl <- lm(control_formula, data = data)
   data$p <- predict(fit_fwl)
   data$d <- fit_fwl$residuals
+  data$d_it <- data$d
+  
+  # demean residulas
+  data$d_i_bar <- ave(data$d, data$id)
+  data$d_t_bar <- ave(data$d_it, data$time)
+  data$d_bar_bar <- mean(data$d_it)
+  data$d_it_til <- data$d_it - data$d_i_bar - data$d_t_bar + data$d_bar_bar
+  
+  data$d_kt_bar <- ave(data$d_it, data$treat_time, data$time)
+  data$d_k_bar <- ave(data$d_it, data$treat_time)
+  data$d_ikt_til <- data$d_it - data$d_i_bar - (data$d_kt_bar - data$d_k_bar)
+  data$d_kt_til <- (data$d_kt_bar - data$d_k_bar) - (data$d_t_bar - data$d_bar_bar)
+  
   return(data)
 }
 
