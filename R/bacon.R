@@ -72,8 +72,15 @@ bacon <- function(formula,
       
       data1 <- subset_data(data, treated_group, untreated_group)
       
+      weight1 <- calculate_weights(data = data1,
+                                   treated_group = treated_group,
+                                   untreated_group = untreated_group)
       
+      estimate1 <- stats::lm(outcome ~ treated + factor(time) + factor(id),
+                             data = data1)$coefficients[2]
       
+      two_by_twos[i, "estimate"] <- estimate1
+      two_by_twos[i, "weight"] <- weight1
     }
     
     two_by_twos <- scale_weights(two_by_twos)
@@ -120,15 +127,16 @@ bacon <- function(formula,
       Bb <- calc_Bb(data1)
       
       # weight
+      N <- nrow(data1)
       finals <- N^2*((1 - Rsq)*VD + Vdp)
       Beta <- ((1 - Rsq)*VD*BD + Vdp*Bb)/((1- Rsq)*VD + Vdp)
       
-    
       two_by_twos[i, "weight"] <- finals
       two_by_twos[i, "estimate"] <- Beta
     }
     
-    # two_by_twos <- scale_weights(two_by_twos)
+    two_by_twos <- scale_weights(two_by_twos)
+  
     
     r_list <- list("beta_hat_w" = beta_hat_w,
                    "Sigma" = Sigma,
@@ -184,6 +192,7 @@ calc_pgjtile <- function(data) {
 }
 
 calc_Vdp <- function(data) {
+  N <- nrow(data)
   fit_p <- lm(g_p ~ factor(id) + factor(time), data = data)
   data$ptilde <- predict(fit_p)
   data$dp <- data$pgjtilde - data$ptilde
