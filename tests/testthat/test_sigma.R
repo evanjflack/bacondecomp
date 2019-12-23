@@ -69,6 +69,6 @@ ret_bacon <- bacon(formula,
 two_by_twos <- ret_bacon$two_by_twos
 beta_hat_b_two_by_twos <- weighted.mean(two_by_twos$estimate, two_by_twos$weight)
 
-# test_that("Equation 26 Correct", {
-#   expect_equal(0, (beta_hat_b - beta_hat_b_two_by_twos)/(1- Sigma))
-# })
+test_that("Equation 26 Correct", {
+  expect_equal(0, (beta_hat_b - beta_hat_b_two_by_twos)/(1- Sigma))
+})

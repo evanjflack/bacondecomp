@@ -136,7 +136,6 @@ bacon <- function(formula,
     }
     
     two_by_twos <- scale_weights(two_by_twos)
-  
     
     r_list <- list("beta_hat_w" = beta_hat_w,
                    "Sigma" = Sigma,
@@ -184,7 +183,7 @@ partial_group_x <- function(data, control_vars) {
 }
 
 calc_pgjtile <- function(data) {
-  fit_pgj <- lm(Dtilde ~ g_l_income + g_l_pop, data = data)
+  fit_pgj <- lm(Dtilde ~ p_g_l_income + p_g_l_pop, data = data)
   data$pgjtilde <- predict(fit_pgj)
   Rsq <- summary(fit_pgj)$r.squared
   r_list <- list(data = data, Rsq = Rsq)
@@ -194,7 +193,7 @@ calc_pgjtile <- function(data) {
 calc_Vdp <- function(data) {
   N <- nrow(data)
   fit_p <- lm(g_p ~ factor(id) + factor(time), data = data)
-  data$ptilde <- predict(fit_p)
+  data$ptilde <- fit_p$residuals
   data$dp <- data$pgjtilde - data$ptilde
   Vdp <- var(data$dp)*(N - 1)/N
   r_list <- list(data = data, Vdp = Vdp)
