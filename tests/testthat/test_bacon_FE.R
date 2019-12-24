@@ -25,7 +25,7 @@ test_that("Two-way FE recovered", {
 # Controlled -------------------------------------------------------------------
 df <- bacon::castle[, c("state", "year", "l_homicide", "post", "l_income", 
                         "l_pop")]
-test_formula <- l_homicide ~ post + . - state - year
+test_formula <- l_homicide ~ post + . + l_pop - state - year
 ret_bacon <- bacon(test_formula, 
                    data = df,
                    id_var = "state",
