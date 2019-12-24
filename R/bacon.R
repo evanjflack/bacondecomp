@@ -52,7 +52,6 @@ bacon <- function(formula,
                   data,
                   id_var,
                   time_var) {
-
   # Unpack variable names and rename variables
   vars <- unpack_variable_names(formula)
   outcome_var <- vars$outcome_var
@@ -104,12 +103,16 @@ bacon <- function(formula,
   } else if (length(control_vars) > 0) {
     # Controled ----------------------------------------------------------------
     # Predict Treatment and calulate demeaned residuals
+    
+    # First evaluate formula in environment and update control formula
+    # This is a bit lengthy as we need to account for people regressing 
+    # y ~ post + .
+    new_formula <- formula(terms(formula, data = data))
     control_formula <- update(
-      formula,
-      paste0("treated ~ . + factor(time) + factor(id) -", treated_var)
+      new_formula,
+      paste0("treated ~ . + factor(time) + factor(id) - time - id - outcome - treat_time - treated - ", treated_var)
     )
 
-    # Runs Frisch-Waugh-Lovell regression
     data <- run_fwl(data, control_formula)
 
     # Within stuff
