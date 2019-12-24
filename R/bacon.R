@@ -1,7 +1,8 @@
 #' Goodman-Bacon Decomposition
 #'
 #' bacon() is a function that perfroms the Goodman-Bacon decomposition for
-#'  differences-in-differences with variation in treatment timing.
+#'  differences-in-differences with variation in treatment timing (with or 
+#'  wothout time-varying control variables). 
 #'
 #' @param formula an object of class "\link[stats]{formula}": a symbolic
 #'  representation of the model to be fitted. Must be  of the form y ~ D + .,
@@ -12,9 +13,16 @@
 #' @param id_var character, the name of id variable for units.
 #' @param time_var character, the name of time variable.
 #'
-#' @return data.frame of all 2x2 estimates and weights
-#'
-#' @import stats
+#' @return If control variables are included in the formula, then an object of 
+#'  class "list" with three elements: 
+#'  \item{Omega}{a number between 0 and 1, the weight of the within timing group
+#'   coefficient}
+#'  \item{beta_hat_w}{a number, the within timing group coefficient}
+#'  \item{two_by_twos}{a data.frame with the covariate adjusted 2x2 estimates 
+#'   and weights}
+#'  
+#' If not control variables are included then only a data.frame with the 2x2 
+#'  estimates and weights is returned.
 #'
 #' @examples
 #' # Castle Doctrine (Uncontrolled)
@@ -31,12 +39,13 @@
 #'
 #'   }
 #' # Castle Doctrine (Controlled)
-#' test_formula <- l_homicide ~ post + l_pop + l_income
-#' ret_bacon <- bacon(test_formula,
-#'                    data = df,
+#' ret_bacon <- bacon(l_homicide ~ post + l_pop + l_income,
+#'                    data = bacon::castle,
 #'                    id_var = "state",
 #'                    time_var = "year")
 #' df_bacon <- ret_bacon$two_by_twos
+#'
+#' @import stats
 #'
 #' @export
 bacon <- function(formula,
@@ -45,11 +54,11 @@ bacon <- function(formula,
                   time_var) {
 
   # Unpack variable names and rename variables
-  vars <- bacon::unpack_variable_names(formula)
+  vars <- unpack_variable_names(formula)
   outcome_var <- vars$outcome_var
   treated_var <- vars$treated_var
   control_vars <- vars$control_vars
-  data <- bacon::rename_vars(data, id_var, time_var, outcome_var, treated_var)
+  data <- rename_vars(data, id_var, time_var, outcome_var, treated_var)
 
   # Check for NA observations
   nas <- sum(is.na(data[, c("id", "time", "outcome", "treated")]))
@@ -76,11 +85,11 @@ bacon <- function(formula,
       treated_group <- two_by_twos[i, "treated"]
       untreated_group <- two_by_twos[i, "untreated"]
 
-      data1 <- bacon::subset_data(data, treated_group, untreated_group)
+      data1 <- subset_data(data, treated_group, untreated_group)
 
-      weight <- bacon::calculate_weights(data = data1,
-                                         treated_group = treated_group,
-                                         untreated_group = untreated_group)
+      weight <- calculate_weights(data = data1,
+                                  treated_group = treated_group,
+                                  untreated_group = untreated_group)
 
       estimate <- lm(outcome ~ treated + factor(time) + factor(id),
                      data = data1)$coefficients[2]
@@ -89,7 +98,7 @@ bacon <- function(formula,
       two_by_twos[i, "weight"] <- weight
     }
 
-    two_by_twos <- bacon::scale_weights(two_by_twos)
+    two_by_twos <- scale_weights(two_by_twos)
     return(two_by_twos)
 
   } else if (length(control_vars) > 0) {
@@ -101,13 +110,13 @@ bacon <- function(formula,
     )
 
     # Runs Frisch-Waugh-Lovell regression
-    data <- bacon::run_fwl(data, control_formula)
+    data <- run_fwl(data, control_formula)
 
     # Within stuff
-    Omega <- bacon::calculate_Omega(data)
-    beta_hat_w <- bacon::calculate_beta_hat_w(data)
+    Omega <-calculate_Omega(data)
+    beta_hat_w <- calculate_beta_hat_w(data)
 
-    r_collapse_x_p <- bacon::collapse_x_p(data, control_formula)
+    r_collapse_x_p <- collapse_x_p(data, control_formula)
     data <- r_collapse_x_p$data
     g_control_formula <- r_collapse_x_p$g_control_formula
 
@@ -116,8 +125,7 @@ bacon <- function(formula,
       untreated_group <- two_by_twos[i, "untreated"]
       data1 <- data[data$treat_time %in% c(treated_group, untreated_group), ]
 
-      weight_est <- bacon::calc_controlled_beta_weights(data1,
-                                                        g_control_formula)
+      weight_est <- calc_controlled_beta_weights(data1, g_control_formula)
       s_kl <- weight_est$s_kl
       beta_hat_d_bkl <- weight_est$beta_hat_d_bkl
 
@@ -125,7 +133,7 @@ bacon <- function(formula,
       two_by_twos[i, "estimate"] <- beta_hat_d_bkl
     }
 
-    two_by_twos <- bacon::scale_weights(two_by_twos)
+    two_by_twos <- scale_weights(two_by_twos)
     r_list <- list("beta_hat_w" = beta_hat_w,
                    "Omega" = Omega,
                    "two_by_twos" = two_by_twos)
@@ -447,7 +455,13 @@ calc_VD <- function(data) {
   return(r_list)
 }
 
-
+#' Partial Out FE from Group Level Xs and p 
+#' 
+#' @param data, a data.frame with the variables in the control formula and 
+#'  p
+#' @param g_control_formula control formula with group level variables
+#' 
+#' @return updated data.frame with new partialled out group level variables
 partial_group_x <- function(data, g_control_formula) {
   g_vars <- unlist(strsplit(as.character(g_control_formula)[2], " \\+ "))
   for (v in g_vars) {
@@ -458,6 +472,15 @@ partial_group_x <- function(data, g_control_formula) {
   return(data)
 }
 
+#' Calculate pgjtile and Rsq
+#' 
+#' @param data, a data.frame with the variables in the control formula and 
+#'  Dtilde
+#' @param g_control_formula control formula with group level variables
+#' 
+#' @return a list with two elements: 
+#' \item{data}{updated data.frame with new variable pgjtilde}
+#' \item{Rsq}{Rsq from the regression to generate pgjtilde}
 calc_pgjtile <- function(data, g_control_formula) {
   g_vars <- unlist(strsplit(as.character(g_control_formula)[2], " \\+ "))
   p_g_vars <- paste0("p_", g_vars)
@@ -472,6 +495,13 @@ calc_pgjtile <- function(data, g_control_formula) {
   return(r_list)
 }
 
+#' Calculate Vdp
+#' 
+#' @param data a data.frame with the variables g_p, id, time, and ptilde
+#' 
+#' @return list with two elements
+#' \item{data}{data.frame with new variables ptilde and dp}
+#' \item{Vdp}{Variance of dp}
 calc_Vdp <- function(data) {
   N <- nrow(data)
   fit_p <- lm(g_p ~ factor(id) + factor(time), data = data)
@@ -482,6 +512,12 @@ calc_Vdp <- function(data) {
   return(r_list)
 }
 
+#' Calculate BD
+#' 
+#' @param data a data.frame with all variables in the g_control_formula, 
+#'  outcome, treated, id, and time
+#' @param g_control_formula control formula with group level variables
+#' @return BD
 calc_BD <- function(data, g_control_formula) {
   BD_formula <- update(g_control_formula,
                        outcome ~ treated + . + factor(id) + factor(time))
@@ -490,6 +526,11 @@ calc_BD <- function(data, g_control_formula) {
   return(BD)
 }
 
+#' Calculate Bb
+#' 
+#' @param data a data.frame with the variables outcome, dp, time, and id
+#' 
+#' @return Bb
 calc_Bb <- function(data) {
   fit_Bb <- lm(outcome ~ dp + factor(time) + factor(id),
                data = data)
@@ -497,38 +538,68 @@ calc_Bb <- function(data) {
   return(Bb)
 }
 
+#' Calculate Covariate Adjusted Between Beta Hat
+#' 
+#' @param Rsq R squared from the regression in calc_pgjtilde
+#' @param VD variance of the demeaned treatment indicator (in the dyad)
+#' @param BD coeffieicient on treatment from a regression of the outcome on 
+#'  treatment and group level control variables with unite and time FE
+#' @param Vdp variance of dp (pgjtilde - ptilde)
+#' @param Bb coefficient on dp from a regression of the outcome on dp with unit 
+#'  and time fixed effects
+#' 
+#' @return dyad's covariate adjusted between estimate
 calculate_beta_hat_d_bkl <- function(Rsq, VD, BD, Vdp, Bb) {
   beta_hat_d_bkl <- ( (1 - Rsq) * VD * BD + Vdp * Bb) / ( (1 - Rsq) * VD + Vdp)
   return(beta_hat_d_bkl)
 }
 
+#' Calculate Weight (Controlled)
+#' 
+#' @param N observations in dyad
+#' @param Rsq R squared from the regression in calc_pgjtilde
+#' @param VD variance of the demeaned treatment indicator (in the dyad)
+#' @param Vdp variance of dp (pgjtilde - ptilde)
+#' 
+#' @return the weight given to the dyad's estimate
 calculate_s_kl <- function(N, Rsq, VD, Vdp) {
   s_kl <- N ^ 2 * ( (1 - Rsq) * VD + Vdp)
   return(s_kl)
 }
 
+#' Calculates Controlled Betas and Weights
+#' 
+#' Wrapper function for finding the dyad beta/weight in the controled 
+#'  decomposition
+#'  
+#' @param data a data.frame
+#' @param g_control_formula formula with group/timelevel control variables
+#' 
+#' @return a list with two elements
+#' \item{s_kl}{the weight given to the dyad kl's estimate}
+#' \item{beta_hat_d_bkl}{the covariate adjusted 2x2 estimate for the dyad kl}
 calc_controlled_beta_weights <- function(data, g_control_formula) {
-  r_calc_VD <- bacon::calc_VD(data)
+  r_calc_VD <- calc_VD(data)
   VD <- r_calc_VD$VD
   data <- r_calc_VD$data
 
-  data <- bacon::partial_group_x(data, g_control_formula)
+  data <-partial_group_x(data, g_control_formula)
 
-  r_calc_pgjtilde <- bacon::calc_pgjtile(data, g_control_formula)
+  r_calc_pgjtilde <- calc_pgjtile(data, g_control_formula)
   Rsq <- r_calc_pgjtilde$Rsq
   data <- r_calc_pgjtilde$data
 
-  r_calc_Vdp <- bacon::calc_Vdp(data)
+  r_calc_Vdp <- calc_Vdp(data)
   Vdp <- r_calc_Vdp$Vdp
   data <- r_calc_Vdp$data
 
-  BD <- bacon::calc_BD(data, g_control_formula)
-  Bb <- bacon::calc_Bb(data)
+  BD <- calc_BD(data, g_control_formula)
+  Bb <- calc_Bb(data)
 
   N <- nrow(data)
 
-  s_kl <- bacon::calculate_s_kl(N, Rsq, VD, Vdp)
-  beta_hat_d_bkl <- bacon::calculate_beta_hat_d_bkl(Rsq, VD, BD, Vdp, Bb)
+  s_kl <- calculate_s_kl(N, Rsq, VD, Vdp)
+  beta_hat_d_bkl <- calculate_beta_hat_d_bkl(Rsq, VD, BD, Vdp, Bb)
 
   r_list <- list(s_kl = s_kl, beta_hat_d_bkl = beta_hat_d_bkl)
   return(r_list)

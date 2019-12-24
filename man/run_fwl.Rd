@@ -12,7 +12,7 @@ run_fwl(data, control_formula)
 \item{control_formula}{a fomula}
 }
 \value{
-data, a data.frame with predictions/residuals (and their 
+data, a data.frame with predictions/residuals (and their
  transfirmations) from FWL regession
 }
 \description{

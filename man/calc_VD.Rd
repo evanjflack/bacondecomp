@@ -10,7 +10,7 @@ calc_VD(data)
 \item{data}{a data.frame}
 }
 \value{
-a list of data (a data.frame) and VD, the varince of the demeaned 
+a list of data (a data.frame) and VD, the varince of the demeaned
  treatment variable
 }
 \description{

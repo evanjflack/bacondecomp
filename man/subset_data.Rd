@@ -9,17 +9,17 @@ subset_data(data, treated_group, untreated_group)
 \arguments{
 \item{data}{a data.frame}
 
-\item{treated_group}{integer, initial treatment time of group acting as 
+\item{treated_group}{integer, initial treatment time of group acting as
 treated}
 
-\item{untreated_group}{interger, initial treatment time of group acting as 
+\item{untreated_group}{interger, initial treatment time of group acting as
 untreated}
 }
 \value{
 subsetted data.frame
 }
 \description{
-In the uncontrolled decomposition, subset_data() subsets the data to only 
+In the uncontrolled decomposition, subset_data() subsets the data to only
  two treatment groups, and subsets the time to either before the later group
  has been treated or after the earlier group has been treated.
 }

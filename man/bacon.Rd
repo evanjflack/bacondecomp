@@ -7,10 +7,10 @@
 bacon(formula, data, id_var, time_var)
 }
 \arguments{
-\item{formula}{an object of class "\link[stats]{formula}": a symbolic 
+\item{formula}{an object of class "\link[stats]{formula}": a symbolic
 representation of the model to be fitted. Must be  of the form y ~ D + .,
-where y is the outcome variable,  D is the binary 
-treatment indicator, and . can be any additional control variables. Do not 
+where y is the outcome variable,  D is the binary
+treatment indicator, and . can be any additional control variables. Do not
 include in the fixed effects in the formula.}
 
 \item{data}{a data.frame containing the variables in the model.}
@@ -20,14 +20,24 @@ include in the fixed effects in the formula.}
 \item{time_var}{character, the name of time variable.}
 }
 \value{
-data.frame of all 2x2 estimates and weights
+If control variables are included in the formula, then an object of 
+ class "list" with three elements: 
+ \item{Omega}{a number between 0 and 1, the weight of the within timing group
+  coefficient}
+ \item{beta_hat_w}{a number, the within timing group coefficient}
+ \item{two_by_twos}{a data.frame with the covariate adjusted 2x2 estimates 
+  and weights}
+ 
+If not control variables are included then only a data.frame with the 2x2 
+ estimates and weights is returned.
 }
 \description{
 bacon() is a function that perfroms the Goodman-Bacon decomposition for
- differences-in-differences with variation in treatment timing.
+ differences-in-differences with variation in treatment timing (with or 
+ wothout time-varying control variables).
 }
 \examples{
-##### Castle Doctrine (Uncontrolled) #####
+# Castle Doctrine (Uncontrolled)
 df_bacon <- bacon(l_homicide ~ post,
                   data = bacon::castle,
                   id_var = "state",
@@ -40,10 +50,9 @@ ggplot(df_bacon) +
   geom_point()
 
   }
-##### Castle Doctrine (Controlled) #####
-test_formula <- l_homicide ~ post + l_pop + l_income
-ret_bacon <- bacon(test_formula, 
-                   data = df,
+# Castle Doctrine (Controlled)
+ret_bacon <- bacon(l_homicide ~ post + l_pop + l_income,
+                   data = bacon::castle,
                    id_var = "state",
                    time_var = "year")
 df_bacon <- ret_bacon$two_by_twos
