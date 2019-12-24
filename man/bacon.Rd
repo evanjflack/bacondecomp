@@ -7,10 +7,11 @@
 bacon(formula, data, id_var, time_var)
 }
 \arguments{
-\item{formula}{a symbolic representation of the model to be fitted. Must be 
-of the form y ~ D + ., where D is the binary treatment indicator, and . can 
-be any additional control variables. Do not include in the fixed effects in 
-the formula.}
+\item{formula}{an object of class "\link[stats]{formula}": a symbolic 
+representation of the model to be fitted. Must be  of the form y ~ D + .,
+where y is the outcome variable,  D is the binary 
+treatment indicator, and . can be any additional control variables. Do not 
+include in the fixed effects in the formula.}
 
 \item{data}{a data.frame containing the variables in the model.}
 
@@ -26,14 +27,12 @@ bacon() is a function that perfroms the Goodman-Bacon decomposition for
  differences-in-differences with variation in treatment timing.
 }
 \examples{
-# Castle Doctrine -----------------------------------------------------------
+##### Castle Doctrine (Uncontrolled) #####
 df_bacon <- bacon(l_homicide ~ post,
                   data = bacon::castle,
                   id_var = "state",
                   time_var = "year")
-
 \donttest{
-
 library(ggplot2)
 ggplot(df_bacon) +
   aes(x = weight, y = estimate, shape = factor(type)) +
@@ -41,8 +40,12 @@ ggplot(df_bacon) +
   geom_point()
 
   }
+##### Castle Doctrine (Controlled) #####
+test_formula <- l_homicide ~ post + l_pop + l_income
+ret_bacon <- bacon(test_formula, 
+                   data = df,
+                   id_var = "state",
+                   time_var = "year")
+df_bacon <- ret_bacon$two_by_twos
 
-}
-\author{
-Evan Flack
 }

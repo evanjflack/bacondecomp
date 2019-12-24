@@ -3,28 +3,26 @@
 #' bacon() is a function that perfroms the Goodman-Bacon decomposition for
 #'  differences-in-differences with variation in treatment timing.
 #'
-#' @param formula a symbolic representation of the model to be fitted. Must be 
-#'  of the form y ~ D + ., where D is the binary treatment indicator, and . can 
-#'  be any additional control variables. Do not include in the fixed effects in 
-#'  the formula.
+#' @param formula an object of class "\link[stats]{formula}": a symbolic 
+#'  representation of the model to be fitted. Must be  of the form y ~ D + .,
+#'  where y is the outcome variable,  D is the binary 
+#'  treatment indicator, and . can be any additional control variables. Do not 
+#'  include in the fixed effects in the formula.
 #' @param data a data.frame containing the variables in the model.
 #' @param id_var character, the name of id variable for units.
 #' @param time_var character, the name of time variable.
 #'
-#' @author Evan Flack
 #' @return data.frame of all 2x2 estimates and weights
 #' 
 #' @import stats
 #'
 #' @examples
-#' # Castle Doctrine -----------------------------------------------------------
+#' # Castle Doctrine (Uncontrolled)
 #' df_bacon <- bacon(l_homicide ~ post,
 #'                   data = bacon::castle,
 #'                   id_var = "state",
 #'                   time_var = "year")
-#'
 #' \donttest{
-#'
 #' library(ggplot2)
 #' ggplot(df_bacon) +
 #'   aes(x = weight, y = estimate, shape = factor(type)) +
@@ -32,6 +30,13 @@
 #'   geom_point()
 #'
 #'   }
+#' # Castle Doctrine (Controlled)
+#' test_formula <- l_homicide ~ post + l_pop + l_income
+#' ret_bacon <- bacon(test_formula, 
+#'                    data = df,
+#'                    id_var = "state",
+#'                    time_var = "year")
+#' df_bacon <- ret_bacon$two_by_twos
 #'
 #' @export
 bacon <- function(formula,
