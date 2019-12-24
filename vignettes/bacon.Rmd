@@ -2,7 +2,7 @@
 title: "bacon"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteIndexEntry{bacon}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -19,6 +19,7 @@ knitr::opts_chunk$set(
 
 ## Example: Castle Doctrine
 The following example comes from Cheng and Hoekstra (2013, JHR). The authors estimate the effect of "castle doctrines," state laws that make it easier to use lethal force in self defenense. The data set `castle` contains state/year level informaton from 2000-2010 on crime rates and whether or not the state had a castle doctrine in effect. Here we replicate the analysis on homicide rates. The key variables are :
+
 * `state`
 * `year`
 * `l_homicide` log of the homicide rate
@@ -48,8 +49,8 @@ Now, we plot each 2x2 estimate and its weight to see what is driving the result.
 library(ggplot2)
 
 ggplot(df_bacon) +
-  aes(x = weight, y = estimate) +
-  labs(x = "Weight", y = "Estimate") +
+  aes(x = weight, y = estimate, shape = factor(type)) +
+  labs(x = "Weight", y = "Estimate", shape = "Type") +
   geom_point()
 ```
 
@@ -65,8 +66,8 @@ ret_bacon <- bacon(l_homicide ~ post + l_pop + l_income,
 beta_hat_w <- ret_bacon$beta_hat_w
 beta_hat_b <- weighted.mean(ret_bacon$two_by_twos$estimate, 
                             ret_bacon$two_by_twos$weight)
-Sigma <- ret_bacon$Sigma
-bacon_coef_cont <- Sigma*beta_hat_w + (1 - Sigma)*beta_hat_b
+Omega <- ret_bacon$Omega
+bacon_coef_cont <- Omega*beta_hat_w + (1 - Omega)*beta_hat_b
 print(paste("Weighted sum of decomposition =", round(bacon_coef_cont, 4)))
 
 two_way_fe_cont <- lm(l_homicide ~ post + l_pop + l_income + factor(state) + 
@@ -76,3 +77,12 @@ two_way_fe_coef_cont <- two_way_fe_cont$coefficients["post"]
 print(paste("Two way FE estimate =", round(two_way_fe_coef_cont, 4)))
 ```
 
+We can also plot the decomposed between estimates and their weights.
+
+```{r plot2}
+df_bacon <- ret_bacon$two_by_twos
+ggplot(df_bacon) +
+  aes(x = weight, y = estimate) +
+  labs(x = "Weight", y = "Estimate") +
+  geom_point()
+```

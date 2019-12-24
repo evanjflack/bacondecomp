@@ -105,6 +105,8 @@ bacon <- function(formula,
 
     # Rescale weights to sum to 1
     two_by_twos <- scale_weights(two_by_twos)
+    # Classify estimate types (e.g. treated vs not treated)
+    two_by_twos <- classify_type(two_by_twos)
     return(two_by_twos)
 
   } else if (length(control_vars) > 0) {
@@ -350,6 +352,15 @@ scale_weights <- function(two_by_twos) {
   return(two_by_twos)
 }
 
+classify_type <- function(two_by_twos) {
+  two_by_twos[, "type"] <- ifelse(two_by_twos$untreated == 99999, 
+                                  "Treated vs Untreated", 
+                                  ifelse(two_by_twos$treated > 
+                                           two_by_twos$untreated, 
+                                         "Later vs Earlier Treated", 
+                                         "Earlier vs Later Treated"))
+  return(two_by_twos)
+}
 
 #' Run Frisch-Waugh-Lowell Regression
 #'
