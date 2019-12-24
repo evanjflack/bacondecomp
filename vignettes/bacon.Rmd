@@ -45,7 +45,7 @@ print(paste("Two-way FE estimate =", round(fit_tw$coefficients[2], 4)))
 
 Now, we plot each 2x2 estimate and its weight to see what is driving the result.
 
-```{r plot, fig.width = 10, fig.height = 10, fig.align = 'center'}
+```{r plot, fig.width = 7, fig.height = 7, fig.align = 'center'}
 library(ggplot2)
 
 ggplot(df_bacon) +
@@ -79,7 +79,7 @@ print(paste("Two way FE estimate =", round(two_way_fe_coef_cont, 4)))
 
 We can also plot the decomposed between estimates and their weights.
 
-```{r plot2}
+```{r plot2, fig.width = 7, fig.height = 7, fig.align = 'center'}
 df_bacon <- ret_bacon$two_by_twos
 ggplot(df_bacon) +
   aes(x = weight, y = estimate) +
