@@ -1,8 +1,8 @@
 #' Goodman-Bacon Decomposition
 #'
 #' bacon() is a function that perfroms the Goodman-Bacon decomposition for
-#'  differences-in-differences with variation in treatment timing (with or 
-#'  wothout time-varying control variables). 
+#'  differences-in-differences with variation in treatment timing (with or
+#'  wothout time-varying control variables).
 #'
 #' @param formula an object of class "\link[stats]{formula}": a symbolic
 #'  representation of the model to be fitted. Must be  of the form y ~ D + .,
@@ -13,15 +13,15 @@
 #' @param id_var character, the name of id variable for units.
 #' @param time_var character, the name of time variable.
 #'
-#' @return If control variables are included in the formula, then an object of 
-#'  class "list" with three elements: 
+#' @return If control variables are included in the formula, then an object of
+#'  class "list" with three elements:
 #'  \item{Omega}{a number between 0 and 1, the weight of the within timing group
 #'   coefficient}
 #'  \item{beta_hat_w}{a number, the within timing group coefficient}
-#'  \item{two_by_twos}{a data.frame with the covariate adjusted 2x2 estimates 
+#'  \item{two_by_twos}{a data.frame with the covariate adjusted 2x2 estimates
 #'   and weights}
-#'  
-#' If not control variables are included then only a data.frame with the 2x2 
+#'
+#' If not control variables are included then only a data.frame with the 2x2
 #'  estimates and weights is returned.
 #'
 #' @examples
@@ -52,6 +52,8 @@ bacon <- function(formula,
                   data,
                   id_var,
                   time_var) {
+  # Evaluate formula in data environment
+  formula <- formula(terms(formula, data = data))
   # Unpack variable names and rename variables
   vars <- unpack_variable_names(formula)
   outcome_var <- vars$outcome_var
@@ -103,20 +105,15 @@ bacon <- function(formula,
   } else if (length(control_vars) > 0) {
     # Controled ----------------------------------------------------------------
     # Predict Treatment and calulate demeaned residuals
-    
-    # First evaluate formula in environment and update control formula
-    # This is a bit lengthy as we need to account for people regressing 
-    # y ~ post + .
-    new_formula <- formula(terms(formula, data = data))
     control_formula <- update(
-      new_formula,
-      paste0("treated ~ . + factor(time) + factor(id) - time - id - outcome - treat_time - treated - ", treated_var)
+      formula,
+      paste0("treated ~ . + factor(time) + factor(id) -", treated_var)
     )
-
+    
     data <- run_fwl(data, control_formula)
 
     # Within stuff
-    Omega <-calculate_Omega(data)
+    Omega <- calculate_Omega(data)
     beta_hat_w <- calculate_beta_hat_w(data)
 
     r_collapse_x_p <- collapse_x_p(data, control_formula)
@@ -458,12 +455,12 @@ calc_VD <- function(data) {
   return(r_list)
 }
 
-#' Partial Out FE from Group Level Xs and p 
-#' 
-#' @param data, a data.frame with the variables in the control formula and 
+#' Partial Out FE from Group Level Xs and p
+#'
+#' @param data, a data.frame with the variables in the control formula and
 #'  p
 #' @param g_control_formula control formula with group level variables
-#' 
+#'
 #' @return updated data.frame with new partialled out group level variables
 partial_group_x <- function(data, g_control_formula) {
   g_vars <- unlist(strsplit(as.character(g_control_formula)[2], " \\+ "))
@@ -476,12 +473,12 @@ partial_group_x <- function(data, g_control_formula) {
 }
 
 #' Calculate pgjtile and Rsq
-#' 
-#' @param data, a data.frame with the variables in the control formula and 
+#'
+#' @param data, a data.frame with the variables in the control formula and
 #'  Dtilde
 #' @param g_control_formula control formula with group level variables
-#' 
-#' @return a list with two elements: 
+#'
+#' @return a list with two elements:
 #' \item{data}{updated data.frame with new variable pgjtilde}
 #' \item{Rsq}{Rsq from the regression to generate pgjtilde}
 calc_pgjtile <- function(data, g_control_formula) {
@@ -499,9 +496,9 @@ calc_pgjtile <- function(data, g_control_formula) {
 }
 
 #' Calculate Vdp
-#' 
+#'
 #' @param data a data.frame with the variables g_p, id, time, and ptilde
-#' 
+#'
 #' @return list with two elements
 #' \item{data}{data.frame with new variables ptilde and dp}
 #' \item{Vdp}{Variance of dp}
@@ -516,8 +513,8 @@ calc_Vdp <- function(data) {
 }
 
 #' Calculate BD
-#' 
-#' @param data a data.frame with all variables in the g_control_formula, 
+#'
+#' @param data a data.frame with all variables in the g_control_formula,
 #'  outcome, treated, id, and time
 #' @param g_control_formula control formula with group level variables
 #' @return BD
@@ -530,9 +527,9 @@ calc_BD <- function(data, g_control_formula) {
 }
 
 #' Calculate Bb
-#' 
+#'
 #' @param data a data.frame with the variables outcome, dp, time, and id
-#' 
+#'
 #' @return Bb
 calc_Bb <- function(data) {
   fit_Bb <- lm(outcome ~ dp + factor(time) + factor(id),
@@ -542,15 +539,15 @@ calc_Bb <- function(data) {
 }
 
 #' Calculate Covariate Adjusted Between Beta Hat
-#' 
+#'
 #' @param Rsq R squared from the regression in calc_pgjtilde
 #' @param VD variance of the demeaned treatment indicator (in the dyad)
-#' @param BD coeffieicient on treatment from a regression of the outcome on 
+#' @param BD coeffieicient on treatment from a regression of the outcome on
 #'  treatment and group level control variables with unite and time FE
 #' @param Vdp variance of dp (pgjtilde - ptilde)
-#' @param Bb coefficient on dp from a regression of the outcome on dp with unit 
+#' @param Bb coefficient on dp from a regression of the outcome on dp with unit
 #'  and time fixed effects
-#' 
+#'
 #' @return dyad's covariate adjusted between estimate
 calculate_beta_hat_d_bkl <- function(Rsq, VD, BD, Vdp, Bb) {
   beta_hat_d_bkl <- ( (1 - Rsq) * VD * BD + Vdp * Bb) / ( (1 - Rsq) * VD + Vdp)
@@ -558,12 +555,12 @@ calculate_beta_hat_d_bkl <- function(Rsq, VD, BD, Vdp, Bb) {
 }
 
 #' Calculate Weight (Controlled)
-#' 
+#'
 #' @param N observations in dyad
 #' @param Rsq R squared from the regression in calc_pgjtilde
 #' @param VD variance of the demeaned treatment indicator (in the dyad)
 #' @param Vdp variance of dp (pgjtilde - ptilde)
-#' 
+#'
 #' @return the weight given to the dyad's estimate
 calculate_s_kl <- function(N, Rsq, VD, Vdp) {
   s_kl <- N ^ 2 * ( (1 - Rsq) * VD + Vdp)
@@ -571,13 +568,13 @@ calculate_s_kl <- function(N, Rsq, VD, Vdp) {
 }
 
 #' Calculates Controlled Betas and Weights
-#' 
-#' Wrapper function for finding the dyad beta/weight in the controled 
+#'
+#' Wrapper function for finding the dyad beta/weight in the controled
 #'  decomposition
-#'  
+#'
 #' @param data a data.frame
 #' @param g_control_formula formula with group/timelevel control variables
-#' 
+#'
 #' @return a list with two elements
 #' \item{s_kl}{the weight given to the dyad kl's estimate}
 #' \item{beta_hat_d_bkl}{the covariate adjusted 2x2 estimate for the dyad kl}
