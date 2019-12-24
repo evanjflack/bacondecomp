@@ -25,14 +25,14 @@ control_formula <- update(formula,
 # Calculate the Ds
 test_data <- run_fwl(test_data, control_formula)
 
-# Calculate Sigma
-Sigma <- calculate_Sigma(test_data)
-one_minus_Sigma <- calculate_one_minus_Sigma(test_data)
+# Calculate Omega
+Omega <- calculate_Omega(test_data)
+one_minus_Omega <- calculate_one_minus_Omega(test_data)
 
 # Defined in Eqn 25, page 26 of Working Paper
 # https://cdn.vanderbilt.edu/vu-my/wp-content/uploads/sites/2318/2019/07/29170757/ddtiming_7_29_2019.pdf
-test_that("Sigma and One Minus Sigma Sum to 1", {
-  expect_equal(Sigma + one_minus_Sigma, 1)
+test_that("Omega and One Minus OmegaSum to 1", {
+  expect_equal(Omega + one_minus_Omega, 1)
 })
 
 # Two way estimate
@@ -53,7 +53,7 @@ test_that("Recover Two Way Coef Using EQN 23", {
 # Equation 25
 beta_hat_w <- calculate_beta_hat_w(test_data)
 beta_hat_b <- calculate_beta_hat_b(test_data)
-beta_hat_dd_25 <- Sigma * beta_hat_w + one_minus_Sigma * beta_hat_b
+beta_hat_dd_25 <- Omega * beta_hat_w + one_minus_Omega * beta_hat_b
 
 test_that("Recover Two Way Coef Using EQN 25", {
   expect_equal(beta_hat_dd_25, beta_hat_dd_two_way)

@@ -40,8 +40,8 @@ test_that("Controlled bacon returns working object", {
 beta_hat_w <- ret_bacon$beta_hat_w
 beta_hat_b <- weighted.mean(ret_bacon$two_by_twos$estimate, 
                             ret_bacon$two_by_twos$weight)
-Sigma <- ret_bacon$Sigma
-two_way_bacon_coef_cont <- Sigma*beta_hat_w + (1 - Sigma)*beta_hat_b
+Omega <- ret_bacon$Omega
+two_way_bacon_coef_cont <- Omega*beta_hat_w + (1 - Omega)*beta_hat_b
 
 # Two way FE estimate
 two_way_test_formula <- update(test_formula, 

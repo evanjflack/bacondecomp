@@ -99,7 +99,7 @@ bacon <- function(formula,
     data <- run_fwl(data, control_formula)
     
     # Within stuff
-    Sigma <- calculate_Sigma(data)
+    Omega <- calculate_Omega(data)
     beta_hat_w <- calculate_beta_hat_w(data)
     
     r_collapse_x_p <- collapse_x_p(data, control_formula)
@@ -122,7 +122,7 @@ bacon <- function(formula,
     two_by_twos <- scale_weights(two_by_twos)
     
     r_list <- list("beta_hat_w" = beta_hat_w,
-                   "Sigma" = Sigma,
+                   "Omega" = Omega,
                    "two_by_twos" = two_by_twos)
     return(r_list)
   }
@@ -130,7 +130,7 @@ bacon <- function(formula,
 
 #' Unpack Variable Names from Formula
 #' 
-#' @param formula formula call from bacon.
+#' @param formula formula call from bacon()
 #' 
 #' @return a list with 3 elements: outcome_var, treated_var, control_vars
 unpack_variable_names <- function(formula) {
@@ -147,10 +147,10 @@ unpack_variable_names <- function(formula) {
 #' Rename Variables
 #' 
 #' @param data a data.frame
-#' @param id_var character
-#' @param time_var character
-#' @param outcome_var character
-#' @param treated_var character
+#' @param id_var character, name of id variable
+#' @param time_var character, name of time variable
+#' @param outcome_var character, name of outcome variable
+#' @param treated_var character, name of binary treatment variable
 #' 
 #' @return data.frame with renmaed columns
 rename_vars <- function(data, id_var, time_var, outcome_var, treated_var) {
@@ -166,6 +166,7 @@ rename_vars <- function(data, id_var, time_var, outcome_var, treated_var) {
 #'
 #' @param data dataset used to create groups - MUST obey naming convention used
 #' in `bacon()`. i.e. columns are ["id", "time", "outcome", "treated"]
+#' 
 #' @param return_merged_df Defaults to `FALSE` whether to return merged data
 #' as well as grid of treatment groups.
 #' @param control_vars list of control variables
@@ -199,13 +200,14 @@ create_treatment_groups <- function(data, control_vars, return_merged_df = FALSE
     two_by_twos <- two_by_twos[!(two_by_twos$treated == 99999), ]
     # Remove first period
     two_by_twos <- two_by_twos[!(two_by_twos$treated == min(data$time)), ]
-    two_by_twos[, c("estimate", "weight")] <- 0
+    two_by_twos[, c("estimate", "weight")] <- NA
   } else if (length(control_vars) > 0) {
     two_by_twos <- data.frame()
     for (i in unique(data$treat_time[data$treat_time != 99999])) {
       for (j in unique(data$treat_time)) {
         if (j > i) {
-          two_by_twos1 <- data.frame(treated = i, untreated = j, weight = 0, estimate = 0)
+          two_by_twos1 <- data.frame(treated = i, untreated = j, weight = NA, 
+                                     estimate = NA)
           two_by_twos <- rbind(two_by_twos, two_by_twos1)
         }
       }
@@ -224,9 +226,15 @@ create_treatment_groups <- function(data, control_vars, return_merged_df = FALSE
 
 #' Subset Data
 #' 
+#' In the uncontrolled decomposition, subset_data() subsets the data to only 
+#'  two treatment groups, and subsets the time to either before the later group
+#'  has been treated or after the earlier group has been treated. 
+#' 
 #' @param data a data.frame
-#' @param treated_group integer
-#' @param untreated_group interger
+#' @param treated_group integer, initial treatment time of group acting as 
+#'  treated
+#' @param untreated_group interger, initial treatment time of group acting as 
+#'  untreated
 #' 
 #' @return subsetted data.frame
 subset_data <- function(data, treated_group, untreated_group) {
@@ -239,7 +247,7 @@ subset_data <- function(data, treated_group, untreated_group) {
   return(data)
 }
 
-#' Calculate Weights for 2x2 Grid
+#' Calculate Weights for 2x2 Grid (uncontrolled)
 #'
 #'  Calculated weights using:
 #'  n_u - observations in untreated group,
@@ -286,27 +294,39 @@ calculate_weights <- function(data,
   return(weight1)
 }
 
+#' Scale Weights
+#' 
+#' scale_weights scales the two_by_two weights so that they sum to 1
+#' 
+#' @param two_by_twos data.frame containing 2x2 weights
+#' 
+#' @return two_by_twos data frame with resaled weight column
 scale_weights <- function(two_by_twos) {
   sum_weight <- sum(two_by_twos$weight)
   two_by_twos$weight <- two_by_twos$weight/sum_weight
   return(two_by_twos)
 }
 
-calculate_Sigma <- function(data) {
+#' Calculate Omega
+#' 
+#' Calculate the weight for the within estimate
+#' 
+#' @param data a data frame with the columns d_ikt_til and d_it_til
+calculate_Omega <- function(data) {
   # TODO Test that within + between = 1
   N <- nrow(data)
   Vd_w <- var(data$d_ikt_til)*(N - 1)/N
   V_d <- var(data$d_it_til)*(N - 1)/N
-  Sigma <- Vd_w/V_d
-  return(Sigma)
+  Omega <- Vd_w/V_d
+  return(Omega)
 }
 
-calculate_one_minus_Sigma <- function(data) {
+calculate_one_minus_Omega <- function(data) {
   N <- nrow(data)
   Vd_b <- var(data$d_kt_til)*(N - 1)/N
   V_d <- var(data$d_it_til)*(N - 1)/N
-  one_minus_Sigma <- Vd_b/V_d
-  return(one_minus_Sigma)
+  one_minus_Omega <- Vd_b/V_d
+  return(one_minus_Omega)
 }
 
 calculate_beta_hat_w <- function(data) {

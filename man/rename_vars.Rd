@@ -9,13 +9,13 @@ rename_vars(data, id_var, time_var, outcome_var, treated_var)
 \arguments{
 \item{data}{a data.frame}
 
-\item{id_var}{character}
+\item{id_var}{character, name of id variable}
 
-\item{time_var}{character}
+\item{time_var}{character, name of time variable}
 
-\item{outcome_var}{character}
+\item{outcome_var}{character, name of outcome variable}
 
-\item{treated_var}{character}
+\item{treated_var}{character, name of binary treatment variable}
 }
 \value{
 data.frame with renmaed columns
