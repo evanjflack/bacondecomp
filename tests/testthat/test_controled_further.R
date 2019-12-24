@@ -41,4 +41,5 @@ test_that("Two Way FE recovered", {
   expect_equal(simple_formula_results$bacon, simple_formula_results$two_way)
   expect_equal(interaction_formula_results$bacon, interaction_formula_results$two_way)
   expect_equal(dot_formula_results$bacon, dot_formula_results$two_way)
+  expect_equal(dot_formula_results$bacon, simple_formula_results$two_way)
 })
