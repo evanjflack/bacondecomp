@@ -3,17 +3,17 @@
 #' bacon() is a function that perfroms the Goodman-Bacon decomposition for
 #'  differences-in-differences with variation in treatment timing.
 #'
-#' @param formula an object of class "\link[stats]{formula}": a symbolic 
+#' @param formula an object of class "\link[stats]{formula}": a symbolic
 #'  representation of the model to be fitted. Must be  of the form y ~ D + .,
-#'  where y is the outcome variable,  D is the binary 
-#'  treatment indicator, and . can be any additional control variables. Do not 
+#'  where y is the outcome variable,  D is the binary
+#'  treatment indicator, and . can be any additional control variables. Do not
 #'  include in the fixed effects in the formula.
 #' @param data a data.frame containing the variables in the model.
 #' @param id_var character, the name of id variable for units.
 #' @param time_var character, the name of time variable.
 #'
 #' @return data.frame of all 2x2 estimates and weights
-#' 
+#'
 #' @import stats
 #'
 #' @examples
@@ -32,7 +32,7 @@
 #'   }
 #' # Castle Doctrine (Controlled)
 #' test_formula <- l_homicide ~ post + l_pop + l_income
-#' ret_bacon <- bacon(test_formula, 
+#' ret_bacon <- bacon(test_formula,
 #'                    data = df,
 #'                    id_var = "state",
 #'                    time_var = "year")
@@ -43,88 +43,89 @@ bacon <- function(formula,
                   data,
                   id_var,
                   time_var) {
-  
+
   # Unpack variable names and rename variables
-  vars <- unpack_variable_names(formula)
+  vars <- bacon::unpack_variable_names(formula)
   outcome_var <- vars$outcome_var
   treated_var <- vars$treated_var
   control_vars <- vars$control_vars
-  data <- rename_vars(data, id_var, time_var, outcome_var, treated_var)
-  
+  data <- bacon::rename_vars(data, id_var, time_var, outcome_var, treated_var)
+
   # Check for NA observations
   nas <- sum(is.na(data[, c("id", "time", "outcome", "treated")]))
   if (nas > 0) {
     stop("NA observations")
   }
-  
+
   # Check for balanced panel
-  bal <- stats::aggregate(time ~ id,  data = data, FUN = length)
+  bal <- aggregate(time ~ id,  data = data, FUN = length)
   balanced <- ifelse(all(bal$time == bal$time[1]), 1, 0)
   if (!balanced) {
     stop("Unbalanced Panel")
   }
-  
+
   # Create 2x2 grid of treatment groups
-  treatment_group_calc <- create_treatment_groups(data, control_vars, 
+  treatment_group_calc <- create_treatment_groups(data, control_vars,
                                                   return_merged_df = TRUE)
   two_by_twos <- treatment_group_calc$two_by_twos
   data <- treatment_group_calc$data
-  
+
   # Uncontrolled ---------------------------------------------------------------
   if (length(control_vars) == 0) {
     for (i in 1:nrow(two_by_twos)) {
       treated_group <- two_by_twos[i, "treated"]
       untreated_group <- two_by_twos[i, "untreated"]
-      
-      data1 <- subset_data(data, treated_group, untreated_group)
-      
-      weight <- calculate_weights(data = data1,
-                                  treated_group = treated_group,
-                                  untreated_group = untreated_group)
-      
+
+      data1 <- bacon::subset_data(data, treated_group, untreated_group)
+
+      weight <- bacon::calculate_weights(data = data1,
+                                         treated_group = treated_group,
+                                         untreated_group = untreated_group)
+
       estimate <- lm(outcome ~ treated + factor(time) + factor(id),
                      data = data1)$coefficients[2]
-      
+
       two_by_twos[i, "estimate"] <- estimate
       two_by_twos[i, "weight"] <- weight
     }
-    
-    two_by_twos <- scale_weights(two_by_twos)
+
+    two_by_twos <- bacon::scale_weights(two_by_twos)
     return(two_by_twos)
-    
+
   } else if (length(control_vars) > 0) {
     # Controled ----------------------------------------------------------------
     # Predict Treatment and calulate demeaned residuals
     control_formula <- update(
-      formula, 
+      formula,
       paste0("treated ~ . + factor(time) + factor(id) -", treated_var)
     )
-    
+
     # Runs Frisch-Waugh-Lovell regression
-    data <- run_fwl(data, control_formula)
-    
+    data <- bacon::run_fwl(data, control_formula)
+
     # Within stuff
-    Omega <- calculate_Omega(data)
-    beta_hat_w <- calculate_beta_hat_w(data)
-    
-    r_collapse_x_p <- collapse_x_p(data, control_formula)
+    Omega <- bacon::calculate_Omega(data)
+    beta_hat_w <- bacon::calculate_beta_hat_w(data)
+
+    r_collapse_x_p <- bacon::collapse_x_p(data, control_formula)
     data <- r_collapse_x_p$data
     g_control_formula <- r_collapse_x_p$g_control_formula
-    
+
     for (i in 1:nrow(two_by_twos)) {
       treated_group <- two_by_twos[i, "treated"]
       untreated_group <- two_by_twos[i, "untreated"]
       data1 <- data[data$treat_time %in% c(treated_group, untreated_group), ]
-      
-      weight_est <- calc_controlled_beta_weights(data1, g_control_formula)
+
+      weight_est <- bacon::calc_controlled_beta_weights(data1,
+                                                        g_control_formula)
       s_kl <- weight_est$s_kl
       beta_hat_d_bkl <- weight_est$beta_hat_d_bkl
-      
+
       two_by_twos[i, "weight"] <- s_kl
       two_by_twos[i, "estimate"] <- beta_hat_d_bkl
     }
-    
-    two_by_twos <- scale_weights(two_by_twos)
+
+    two_by_twos <- bacon::scale_weights(two_by_twos)
     r_list <- list("beta_hat_w" = beta_hat_w,
                    "Omega" = Omega,
                    "two_by_twos" = two_by_twos)
@@ -133,9 +134,9 @@ bacon <- function(formula,
 }
 
 #' Unpack Variable Names from Formula
-#' 
+#'
 #' @param formula formula call from bacon()
-#' 
+#'
 #' @return a list with 3 elements: outcome_var, treated_var, control_vars
 unpack_variable_names <- function(formula) {
   outcome_var <- as.character(formula)[2]
@@ -149,18 +150,18 @@ unpack_variable_names <- function(formula) {
 }
 
 #' Rename Variables
-#' 
+#'
 #' @param data a data.frame
 #' @param id_var character, name of id variable
 #' @param time_var character, name of time variable
 #' @param outcome_var character, name of outcome variable
 #' @param treated_var character, name of binary treatment variable
-#' 
+#'
 #' @return data.frame with renmaed columns
 rename_vars <- function(data, id_var, time_var, outcome_var, treated_var) {
   colnames(data)[colnames(data) == id_var] <- "id"
   colnames(data)[colnames(data) == time_var] <- "time"
-  colnames(data)[colnames(data) == outcome_var] <- "outcome" 
+  colnames(data)[colnames(data) == outcome_var] <- "outcome"
   colnames(data)[colnames(data) == treated_var] <- "treated"
   return(data)
 }
@@ -170,37 +171,39 @@ rename_vars <- function(data, id_var, time_var, outcome_var, treated_var) {
 #'
 #' @param data dataset used to create groups - MUST obey naming convention used
 #' in `bacon()`. i.e. columns are ["id", "time", "outcome", "treated"]
-#' 
+#'
 #' @param return_merged_df Defaults to `FALSE` whether to return merged data
 #' as well as grid of treatment groups.
 #' @param control_vars list of control variables
 #'
 #' @return data.frame describing treatment groups and empty weight and estimate
 #' column set to 0.
-create_treatment_groups <- function(data, control_vars, return_merged_df = FALSE){
+create_treatment_groups <- function(data, control_vars,
+                                    return_merged_df = FALSE) {
   df_treat <- data[data$treated == 1, ]
   df_treat <- df_treat[, c("id", "time")]
   df_treat <- stats::aggregate(time ~ id,  data = df_treat, FUN = min)
   colnames(df_treat) <- c("id", "treat_time")
   data <- merge(data, df_treat, by = "id", all.x = T)
   data[is.na(data$treat_time), "treat_time"] <- 99999
-  
+
   # Check for weakly increasing treatment
   inc <- ifelse(data$treat_time == 99999, 1,
                 ifelse(data$time >= data$treat_time & data$treated == 1, 1,
                        ifelse(data$time < data$treat_time & data$treated == 0,
                               1, 0)))
-  
+
   if (!all(as.logical(inc))) {
     stop("Treatment not weakly increasing with time")
   }
-  
+
   if (length(control_vars) == 0) {
     # create data.frame of all posible 2x2 estimates
     two_by_twos <- expand.grid(unique(data$treat_time),
                                unique(data$treat_time))
     colnames(two_by_twos) <- c("treated", "untreated")
-    two_by_twos <- two_by_twos[!(two_by_twos$treated == two_by_twos$untreated), ]
+    two_by_twos <- two_by_twos[!(two_by_twos$treated ==
+                                 two_by_twos$untreated), ]
     two_by_twos <- two_by_twos[!(two_by_twos$treated == 99999), ]
     # Remove first period
     two_by_twos <- two_by_twos[!(two_by_twos$treated == min(data$time)), ]
@@ -210,14 +213,14 @@ create_treatment_groups <- function(data, control_vars, return_merged_df = FALSE
     for (i in unique(data$treat_time[data$treat_time != 99999])) {
       for (j in unique(data$treat_time)) {
         if (j > i) {
-          two_by_twos1 <- data.frame(treated = i, untreated = j, weight = NA, 
+          two_by_twos1 <- data.frame(treated = i, untreated = j, weight = NA,
                                      estimate = NA)
           two_by_twos <- rbind(two_by_twos, two_by_twos1)
         }
       }
     }
   }
-  
+
   # Whether or not to return the merged data too.
   if (return_merged_df == TRUE) {
     return_data <- list("two_by_twos" = two_by_twos,
@@ -229,17 +232,17 @@ create_treatment_groups <- function(data, control_vars, return_merged_df = FALSE
 }
 
 #' Subset Data
-#' 
-#' In the uncontrolled decomposition, subset_data() subsets the data to only 
+#'
+#' In the uncontrolled decomposition, subset_data() subsets the data to only
 #'  two treatment groups, and subsets the time to either before the later group
-#'  has been treated or after the earlier group has been treated. 
-#' 
+#'  has been treated or after the earlier group has been treated.
+#'
 #' @param data a data.frame
-#' @param treated_group integer, initial treatment time of group acting as 
+#' @param treated_group integer, initial treatment time of group acting as
 #'  treated
-#' @param untreated_group interger, initial treatment time of group acting as 
+#' @param untreated_group interger, initial treatment time of group acting as
 #'  untreated
-#' 
+#'
 #' @return subsetted data.frame
 subset_data <- function(data, treated_group, untreated_group) {
   data <- data[data$treat_time %in% c(treated_group, untreated_group), ]
@@ -299,145 +302,147 @@ calculate_weights <- function(data,
 }
 
 #' Scale Weights
-#' 
+#'
 #' scale_weights scales the two_by_two weights so that they sum to 1
-#' 
+#'
 #' @param two_by_twos data.frame containing 2x2 weights
-#' 
+#'
 #' @return two_by_twos data frame with resaled weight column
 scale_weights <- function(two_by_twos) {
   sum_weight <- sum(two_by_twos$weight)
-  two_by_twos$weight <- two_by_twos$weight/sum_weight
+  two_by_twos$weight <- two_by_twos$weight / sum_weight
   return(two_by_twos)
 }
 
 #' Calculate Omega
-#' 
+#'
 #' Calculate the weight for the within estimate
-#' 
+#'
 #' @param data a data frame with the columns d_ikt_til and d_it_til
-#' 
+#'
 #' return Omega
 calculate_Omega <- function(data) {
   # TODO Test that within + between = 1
   N <- nrow(data)
-  Vd_w <- var(data$d_ikt_til)*(N - 1)/N
-  V_d <- var(data$d_it_til)*(N - 1)/N
-  Omega <- Vd_w/V_d
+  Vd_w <- var(data$d_ikt_til) * (N - 1) / N
+  V_d <- var(data$d_it_til) * (N - 1) / N
+  Omega <- Vd_w / V_d
   return(Omega)
 }
 
 #' Calculate 1 - Omega
-#' 
+#'
 #' Calculate the weight for the between estimates
-#' 
+#'
 #' @param data a data frame with the columns d_kt_til and d_it_til
 calculate_one_minus_Omega <- function(data) {
   N <- nrow(data)
-  Vd_b <- var(data$d_kt_til)*(N - 1)/N
-  V_d <- var(data$d_it_til)*(N - 1)/N
-  one_minus_Omega <- Vd_b/V_d
+  Vd_b <- var(data$d_kt_til) * (N - 1) / N
+  V_d <- var(data$d_it_til) * (N - 1) / N
+  one_minus_Omega <- Vd_b / V_d
   return(one_minus_Omega)
 }
 
 #' Calculate Within Estimate
-#' 
+#'
 #' @param data a data.frame with the columns outcome and d_ikt_til
-#' 
+#'
 #' @return beta_hat_w, the within estimate
 calculate_beta_hat_w <- function(data) {
   N <- nrow(data)
-  C <- cov(data$outcome, data$d_ikt_til)*(N - 1)/N
-  Vd_w <- var(data$d_ikt_til)*(N - 1)/N
-  beta_hat_w <- C/Vd_w
+  C <- cov(data$outcome, data$d_ikt_til) * (N - 1) / N
+  Vd_w <- var(data$d_ikt_til) * (N - 1) / N
+  beta_hat_w <- C / Vd_w
   return(beta_hat_w)
 }
 
 #' CalculateBetween Estimate
-#' 
+#'
 #' @param data a data.frame with the columns outcome and d_kt_til
-#' 
+#'
 #' @return beta_hat_w, the between estimate
 calculate_beta_hat_b <- function(data) {
   N <- nrow(data)
-  C <- cov(data$outcome, data$d_kt_til)*(N - 1)/N
-  Vd_b <- var(data$d_kt_til)*(N - 1)/N
-  beta_hat_b <- C/Vd_b
+  C <- cov(data$outcome, data$d_kt_til) * (N - 1) / N
+  Vd_b <- var(data$d_kt_til) * (N - 1) / N
+  beta_hat_b <- C / Vd_b
   return(beta_hat_b)
 }
 
 #' Run Frisch-Waugh-Lowell Regression
-#' 
-#' Predict treatment using time varing covariates and calculates 
-#' 
+#'
+#' Predict treatment using time varing covariates and calculates
+#'
 #' @param data a data.frame
 #' @param control_formula a fomula
-#' 
-#' @return data, a data.frame with predictions/residuals (and their 
+#'
+#' @return data, a data.frame with predictions/residuals (and their
 #'  transfirmations) from FWL regession
 run_fwl <- function(data, control_formula) {
   fit_fwl <- lm(control_formula, data = data)
   data$p <- predict(fit_fwl)
   data$d <- fit_fwl$residuals
   data$d_it <- data$d
-  
+
   # demean residulas
   data$d_i_bar <- ave(data$d, data$id)
   data$d_t_bar <- ave(data$d_it, data$time)
   data$d_bar_bar <- mean(data$d_it)
   data$d_it_til <- data$d_it - data$d_i_bar - data$d_t_bar + data$d_bar_bar
-  
+
   data$d_kt_bar <- ave(data$d_it, data$treat_time, data$time)
   data$d_k_bar <- ave(data$d_it, data$treat_time)
   data$d_ikt_til <- data$d_it - data$d_i_bar - (data$d_kt_bar - data$d_k_bar)
-  data$d_kt_til <- (data$d_kt_bar - data$d_k_bar) - (data$d_t_bar - data$d_bar_bar)
-  
+  data$d_kt_til <- (data$d_kt_bar - data$d_k_bar) -
+                   (data$d_t_bar - data$d_bar_bar)
+
   return(data)
 }
 
 #' Collapse Xs and Predicted Treatment
-#' 
-#' Collapse Xs and predicted treatment to treatmet group/time level. 
-#' 
+#'
+#' Collapse Xs and predicted treatment to treatmet group/time level.
+#'
 #' @param data a data.frame
 #' @param control_formula, a formula
-#' 
+#'
 #' @return a list of data (a data.frame) and g_control_formula, the formula with
 #'  the group level variable names
 collapse_x_p <- function(data, control_formula) {
   # Group level Xs
   f1 <- update(control_formula, . ~ . - factor(time) - factor(id) - 1)
   control_data <- data.frame(model.matrix(f1, data = data))
-  
+
   my_ave <- function(x, data) {
     ave(x, data$treat_time, data$time)
   }
-  
+
   g_control_data <- data.frame(sapply(control_data, my_ave, data))
   colnames(g_control_data) <- paste0("g_", colnames(g_control_data))
-  
+
   # Group level p
   data$g_p <- ave(data$p, data$treat_time, data$time)
   data <- cbind(data, g_control_data)
-  
-  g_control_formula <- as.formula(paste("~", paste(colnames(g_control_data), collapse = " + ")))
-  
+
+  g_control_formula <- as.formula(paste("~", paste(colnames(g_control_data),
+                                                   collapse = " + ")))
+
   r_list <- list(data = data, g_control_formula = g_control_formula)
-  
+
   return(r_list)
 }
 
 #' Calculate Treatment Variance
-#' 
+#'
 #' @param data a data.frame
-#' 
-#' @return a list of data (a data.frame) and VD, the varince of the demeaned 
+#'
+#' @return a list of data (a data.frame) and VD, the varince of the demeaned
 #'  treatment variable
 calc_VD <- function(data) {
   fit_D <- lm(treated ~ factor(id) + factor(time), data = data)
   data$Dtilde <- fit_D$residuals
   N <- nrow(data)
-  VD <- var(data$Dtilde)*(N - 1)/N
+  VD <- var(data$Dtilde) * (N - 1) / N
   r_list <- list(data = data, VD = VD)
   return(r_list)
 }
@@ -456,10 +461,10 @@ partial_group_x <- function(data, g_control_formula) {
 calc_pgjtile <- function(data, g_control_formula) {
   g_vars <- unlist(strsplit(as.character(g_control_formula)[2], " \\+ "))
   p_g_vars <- paste0("p_", g_vars)
-  
-  p_g_control_formula <- formula(paste("Dtilde ~", paste(p_g_vars, 
+
+  p_g_control_formula <- formula(paste("Dtilde ~", paste(p_g_vars,
                                                          collapse = " + ")))
-  
+
   fit_pgj <- lm(p_g_control_formula, data = data)
   data$pgjtilde <- predict(fit_pgj)
   Rsq <- summary(fit_pgj)$r.squared
@@ -472,58 +477,59 @@ calc_Vdp <- function(data) {
   fit_p <- lm(g_p ~ factor(id) + factor(time), data = data)
   data$ptilde <- fit_p$residuals
   data$dp <- data$pgjtilde - data$ptilde
-  Vdp <- var(data$dp)*(N - 1)/N
+  Vdp <- var(data$dp) * (N - 1) / N
   r_list <- list(data = data, Vdp = Vdp)
   return(r_list)
 }
 
 calc_BD <- function(data, g_control_formula) {
-  BD_formula <- update(g_control_formula, outcome ~ treated + . + factor(id) + factor(time))
+  BD_formula <- update(g_control_formula,
+                       outcome ~ treated + . + factor(id) + factor(time))
   fit_BD <- lm(BD_formula, data = data)
   BD <- fit_BD$coefficients["treated"]
   return(BD)
 }
 
 calc_Bb <- function(data) {
-  fit_Bb <- lm(outcome ~ dp + factor(time) + factor(id), 
+  fit_Bb <- lm(outcome ~ dp + factor(time) + factor(id),
                data = data)
   Bb <- fit_Bb$coefficients["dp"]
   return(Bb)
 }
 
 calculate_beta_hat_d_bkl <- function(Rsq, VD, BD, Vdp, Bb) {
-  beta_hat_d_bkl <- ((1 - Rsq)*VD*BD + Vdp*Bb)/((1- Rsq)*VD + Vdp)
+  beta_hat_d_bkl <- ( (1 - Rsq) * VD * BD + Vdp * Bb) / ( (1 - Rsq) * VD + Vdp)
   return(beta_hat_d_bkl)
 }
 
 calculate_s_kl <- function(N, Rsq, VD, Vdp) {
-  s_kl <- N^2*((1 - Rsq)*VD + Vdp)
+  s_kl <- N ^ 2 * ( (1 - Rsq) * VD + Vdp)
   return(s_kl)
 }
 
 calc_controlled_beta_weights <- function(data, g_control_formula) {
-  r_calc_VD <- calc_VD(data)
+  r_calc_VD <- bacon::calc_VD(data)
   VD <- r_calc_VD$VD
   data <- r_calc_VD$data
-  
-  data <- partial_group_x(data, g_control_formula)
-  
-  r_calc_pgjtilde <- calc_pgjtile(data, g_control_formula)
+
+  data <- bacon::partial_group_x(data, g_control_formula)
+
+  r_calc_pgjtilde <- bacon::calc_pgjtile(data, g_control_formula)
   Rsq <- r_calc_pgjtilde$Rsq
   data <- r_calc_pgjtilde$data
-  
-  r_calc_Vdp <- calc_Vdp(data)
+
+  r_calc_Vdp <- bacon::calc_Vdp(data)
   Vdp <- r_calc_Vdp$Vdp
   data <- r_calc_Vdp$data
-  
-  BD <- calc_BD(data, g_control_formula)
-  Bb <- calc_Bb(data)
-  
+
+  BD <- bacon::calc_BD(data, g_control_formula)
+  Bb <- bacon::calc_Bb(data)
+
   N <- nrow(data)
-  
-  s_kl <- calculate_s_kl(N, Rsq, VD, Vdp)
-  beta_hat_d_bkl <- calculate_beta_hat_d_bkl(Rsq, VD, BD, Vdp, Bb)
-  
+
+  s_kl <- bacon::calculate_s_kl(N, Rsq, VD, Vdp)
+  beta_hat_d_bkl <- bacon::calculate_beta_hat_d_bkl(Rsq, VD, BD, Vdp, Bb)
+
   r_list <- list(s_kl = s_kl, beta_hat_d_bkl = beta_hat_d_bkl)
   return(r_list)
 }
