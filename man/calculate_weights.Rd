@@ -2,7 +2,7 @@
 % Please edit documentation in R/bacon.R
 \name{calculate_weights}
 \alias{calculate_weights}
-\title{Calculate Weights for 2x2 Grid}
+\title{Calculate Weights for 2x2 Grid (uncontrolled)}
 \usage{
 calculate_weights(data, treated_group, untreated_group)
 }

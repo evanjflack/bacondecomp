@@ -312,6 +312,8 @@ scale_weights <- function(two_by_twos) {
 #' Calculate the weight for the within estimate
 #' 
 #' @param data a data frame with the columns d_ikt_til and d_it_til
+#' 
+#' return Omega
 calculate_Omega <- function(data) {
   # TODO Test that within + between = 1
   N <- nrow(data)
@@ -321,6 +323,11 @@ calculate_Omega <- function(data) {
   return(Omega)
 }
 
+#' Calculate 1 - Omega
+#' 
+#' Calculate the weight for the between estimates
+#' 
+#' @param data a data frame with the columns d_kt_til and d_it_til
 calculate_one_minus_Omega <- function(data) {
   N <- nrow(data)
   Vd_b <- var(data$d_kt_til)*(N - 1)/N
@@ -329,6 +336,11 @@ calculate_one_minus_Omega <- function(data) {
   return(one_minus_Omega)
 }
 
+#' Calculate Within Estimate
+#' 
+#' @param data a data.frame with the columns outcome and d_ikt_til
+#' 
+#' @return beta_hat_w, the within estimate
 calculate_beta_hat_w <- function(data) {
   N <- nrow(data)
   C <- cov(data$outcome, data$d_ikt_til)*(N - 1)/N
@@ -337,6 +349,11 @@ calculate_beta_hat_w <- function(data) {
   return(beta_hat_w)
 }
 
+#' CalculateBetween Estimate
+#' 
+#' @param data a data.frame with the columns outcome and d_kt_til
+#' 
+#' @return beta_hat_w, the between estimate
 calculate_beta_hat_b <- function(data) {
   N <- nrow(data)
   C <- cov(data$outcome, data$d_kt_til)*(N - 1)/N
@@ -345,8 +362,15 @@ calculate_beta_hat_b <- function(data) {
   return(beta_hat_b)
 }
 
-# Frisch-Waugh-Lowell Regression
-# Predict Treatment and calulate demeaned residuals
+#' Run Frisch-Waugh-Lowell Regression
+#' 
+#' Predict treatment using time varing covariates and calculates 
+#' 
+#' @param data a data.frame
+#' @param control_formula a fomula
+#' 
+#' @return data, a data.frame with predictions/residuals (and their 
+#'  transfirmations) from FWL regession
 run_fwl <- function(data, control_formula) {
   fit_fwl <- lm(control_formula, data = data)
   data$p <- predict(fit_fwl)
@@ -367,6 +391,15 @@ run_fwl <- function(data, control_formula) {
   return(data)
 }
 
+#' Collapse Xs and Predicted Treatment
+#' 
+#' Collapse Xs and predicted treatment to treatmet group/time level. 
+#' 
+#' @param data a data.frame
+#' @param control_formula, a formula
+#' 
+#' @return a list of data (a data.frame) and g_control_formula, the formula with
+#'  the group level variable names
 collapse_x_p <- function(data, control_formula) {
   # Group level Xs
   f1 <- update(control_formula, . ~ . - factor(time) - factor(id) - 1)
@@ -390,6 +423,12 @@ collapse_x_p <- function(data, control_formula) {
   return(r_list)
 }
 
+#' Calculate Treatment Variance
+#' 
+#' @param data a data.frame
+#' 
+#' @return a list of data (a data.frame) and VD, the varince of the demeaned 
+#'  treatment variable
 calc_VD <- function(data) {
   fit_D <- lm(treated ~ factor(id) + factor(time), data = data)
   data$Dtilde <- fit_D$residuals
@@ -398,6 +437,7 @@ calc_VD <- function(data) {
   r_list <- list(data = data, VD = VD)
   return(r_list)
 }
+
 
 partial_group_x <- function(data, g_control_formula) {
   g_vars <- unlist(strsplit(as.character(g_control_formula)[2], " \\+ "))
