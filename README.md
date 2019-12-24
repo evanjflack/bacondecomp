@@ -7,14 +7,15 @@
 
 ## Overview
 
-`bacon` is a package with tools to perform the Goodman-Bacon decomposition for differences-in-differences with variation in treatment timing.
+`bacon` is a package with tools to perform the Goodman-Bacon decomposition for differences-in-differences with variation in treatment timing. The decomposition can be done with and without time-varying covariates.
 
 ## Functions
 * `bacon()`: calculates all 2x2 differences-in-differences estimates and weights for the Bacon-Goodman decomposition.
 
 ## Data
-* `math_refom`: A data set containing state/year level data on an educational reform and future income.
-* `castle`: A data set containing state/year level data on a crime reform.
+* `math_refom`: Aggregated data from Goodman (2019, JOLE)
+* `castle`: Data from Cheng and Hoekstra (2013, JHR)
+* `divorce:` Data from Stevenson and Wolfers (2006, QJE)
 
 ## Installation
 ``` r
