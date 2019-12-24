@@ -78,29 +78,29 @@ bacon <- function(formula,
       
       data1 <- subset_data(data, treated_group, untreated_group)
       
-      weight1 <- calculate_weights(data = data1,
-                                   treated_group = treated_group,
-                                   untreated_group = untreated_group)
+      weight <- calculate_weights(data = data1,
+                                  treated_group = treated_group,
+                                  untreated_group = untreated_group)
       
-      estimate1 <- stats::lm(outcome ~ treated + factor(time) + factor(id),
-                             data = data1)$coefficients[2]
+      estimate <- lm(outcome ~ treated + factor(time) + factor(id),
+                     data = data1)$coefficients[2]
       
-      two_by_twos[i, "estimate"] <- estimate1
-      two_by_twos[i, "weight"] <- weight1
+      two_by_twos[i, "estimate"] <- estimate
+      two_by_twos[i, "weight"] <- weight
     }
     
     two_by_twos <- scale_weights(two_by_twos)
-    
     return(two_by_twos)
     
   } else if (length(control_vars) > 0) {
     # Controled ----------------------------------------------------------------
     # Predict Treatment and calulate demeaned residuals
-    control_formula <- update(formula,
-                              paste0("treated ~ . + factor(time) + factor(id) -",
-                                     treated_var))
+    control_formula <- update(
+      formula, 
+      paste0("treated ~ . + factor(time) + factor(id) -", treated_var)
+    )
     
-    # Runs FWL regressions
+    # Runs Frisch-Waugh-Lovell regression
     data <- run_fwl(data, control_formula)
     
     # Within stuff
@@ -125,7 +125,6 @@ bacon <- function(formula,
     }
     
     two_by_twos <- scale_weights(two_by_twos)
-    
     r_list <- list("beta_hat_w" = beta_hat_w,
                    "Omega" = Omega,
                    "two_by_twos" = two_by_twos)
