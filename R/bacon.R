@@ -5,10 +5,12 @@
 #'  wothout time-varying control variables).
 #'
 #' @param formula an object of class "\link[stats]{formula}": a symbolic
-#'  representation of the model to be fitted. Must be  of the form y ~ D + .,
+#'  representation of the model to be fitted. Must be  of the form y ~ D + controls,
 #'  where y is the outcome variable,  D is the binary
-#'  treatment indicator, and . can be any additional control variables. Do not
+#'  treatment indicator, and `controls` can be any additional control variables. Do not
 #'  include in the fixed effects in the formula.
+#'  
+#'  If using `.` notation must be of the form y ~ D + . - FE1 - FE2
 #' @param data a data.frame containing the variables in the model.
 #' @param id_var character, the name of id variable for units.
 #' @param time_var character, the name of time variable.
@@ -52,9 +54,8 @@ bacon <- function(formula,
                   data,
                   id_var,
                   time_var) {
-
+  # Evaluate formula in data environment
   formula <- formula(terms(formula, data = data))
-
   # Unpack variable names and rename variables
   vars <- unpack_variable_names(formula)
   outcome_var <- vars$outcome_var
@@ -110,8 +111,7 @@ bacon <- function(formula,
       formula,
       paste0("treated ~ . + factor(time) + factor(id) -", treated_var)
     )
-
-    # Runs Frisch-Waugh-Lovell regression
+    
     data <- run_fwl(data, control_formula)
 
     # Within stuff
