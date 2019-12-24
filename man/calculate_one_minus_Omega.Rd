@@ -9,6 +9,10 @@ calculate_one_minus_Omega(data)
 \arguments{
 \item{data}{a data frame with the columns d_kt_til and d_it_til}
 }
+\value{
+1 - Omega
+}
 \description{
-Calculate the weight for the between estimates
+Calculate the weight for the between estimates. This is used for testing 
+ purposes only.
 }

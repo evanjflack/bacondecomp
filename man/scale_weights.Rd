@@ -10,7 +10,7 @@ scale_weights(two_by_twos)
 \item{two_by_twos}{data.frame containing 2x2 weights}
 }
 \value{
-two_by_twos data frame with resaled weight column
+two_by_twos data.frame with rescaled weight column
 }
 \description{
 scale_weights scales the two_by_two weights so that they sum to 1

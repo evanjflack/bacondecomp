@@ -2,7 +2,7 @@
 % Please edit documentation in R/bacon.R
 \name{calculate_s_kl}
 \alias{calculate_s_kl}
-\title{Calculate Weight (Controlled)}
+\title{Calculate Dyad Weight (Covariate Adjusted)}
 \usage{
 calculate_s_kl(N, Rsq, VD, Vdp)
 }
@@ -19,5 +19,5 @@ calculate_s_kl(N, Rsq, VD, Vdp)
 the weight given to the dyad's estimate
 }
 \description{
-Calculate Weight (Controlled)
+Calculate Dyad Weight (Covariate Adjusted)
 }

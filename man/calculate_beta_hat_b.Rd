@@ -2,7 +2,7 @@
 % Please edit documentation in R/bacon.R
 \name{calculate_beta_hat_b}
 \alias{calculate_beta_hat_b}
-\title{CalculateBetween Estimate}
+\title{Calculate Between Estimate}
 \usage{
 calculate_beta_hat_b(data)
 }
@@ -13,5 +13,6 @@ calculate_beta_hat_b(data)
 beta_hat_w, the between estimate
 }
 \description{
-CalculateBetween Estimate
+Calculate the overall between estimate (not decomposed by treatement group 
+ dyads). This is used for testing purposes only.
 }

@@ -12,5 +12,5 @@ calculate_Omega(data)
 return Omega}
 }
 \description{
-Calculate the weight for the within estimate
+Calculate the weight for the within estimate in the controlled decompositon
 }

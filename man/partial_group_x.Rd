@@ -2,19 +2,20 @@
 % Please edit documentation in R/bacon.R
 \name{partial_group_x}
 \alias{partial_group_x}
-\title{Partial Out FE from Group Level Xs and p}
+\title{Partial Out FE}
 \usage{
 partial_group_x(data, g_control_formula)
 }
 \arguments{
-\item{data, }{a data.frame with the variables in the control formula and 
+\item{data, }{a data.frame with the variables in the g_control_formula and
 p}
 
-\item{g_control_formula}{control formula with group level variables}
+\item{g_control_formula}{control formula with group level variable names}
 }
 \value{
 updated data.frame with new partialled out group level variables
 }
 \description{
-Partial Out FE from Group Level Xs and p
+Partial out time and unit fixed effects from group level control and
+ and predicted treatment variables
 }

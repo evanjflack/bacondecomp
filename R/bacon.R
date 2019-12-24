@@ -8,7 +8,7 @@
 #'  representation of the model to be fitted. Must be  of the form y ~ D + controls,
 #'  where y is the outcome variable,  D is the binary
 #'  treatment indicator, and `controls` can be any additional control variables. Do not
-#'  include in the fixed effects in the formula.
+#'  include the fixed effects in the formula.
 #'  
 #'  If using `.` notation must be of the form y ~ D + . - FE1 - FE2
 #' @param data a data.frame containing the variables in the model.
@@ -54,6 +54,7 @@ bacon <- function(formula,
                   data,
                   id_var,
                   time_var) {
+  
   # Evaluate formula in data environment
   formula <- formula(terms(formula, data = data))
   # Unpack variable names and rename variables
@@ -84,16 +85,17 @@ bacon <- function(formula,
 
   # Uncontrolled ---------------------------------------------------------------
   if (length(control_vars) == 0) {
+    # Iterate through treatment group dyads
     for (i in 1:nrow(two_by_twos)) {
       treated_group <- two_by_twos[i, "treated"]
       untreated_group <- two_by_twos[i, "untreated"]
 
       data1 <- subset_data(data, treated_group, untreated_group)
 
+      # Calculate estimate and weight
       weight <- calculate_weights(data = data1,
                                   treated_group = treated_group,
                                   untreated_group = untreated_group)
-
       estimate <- lm(outcome ~ treated + factor(time) + factor(id),
                      data = data1)$coefficients[2]
 
@@ -101,6 +103,7 @@ bacon <- function(formula,
       two_by_twos[i, "weight"] <- weight
     }
 
+    # Rescale weights to sum to 1
     two_by_twos <- scale_weights(two_by_twos)
     return(two_by_twos)
 
@@ -111,22 +114,24 @@ bacon <- function(formula,
       formula,
       paste0("treated ~ . + factor(time) + factor(id) -", treated_var)
     )
-    
     data <- run_fwl(data, control_formula)
 
-    # Within stuff
+    # Calculate within treatment group estimate and its weight
     Omega <- calculate_Omega(data)
     beta_hat_w <- calculate_beta_hat_w(data)
 
+    # Collapse controls and predicted treatment to treatment group/year level
     r_collapse_x_p <- collapse_x_p(data, control_formula)
     data <- r_collapse_x_p$data
     g_control_formula <- r_collapse_x_p$g_control_formula
 
+    # Iterate through treatment group dyads
     for (i in 1:nrow(two_by_twos)) {
       treated_group <- two_by_twos[i, "treated"]
       untreated_group <- two_by_twos[i, "untreated"]
       data1 <- data[data$treat_time %in% c(treated_group, untreated_group), ]
 
+      # Calculate between group estimate and weight
       weight_est <- calc_controlled_beta_weights(data1, g_control_formula)
       s_kl <- weight_est$s_kl
       beta_hat_d_bkl <- weight_est$beta_hat_d_bkl
@@ -134,7 +139,8 @@ bacon <- function(formula,
       two_by_twos[i, "weight"] <- s_kl
       two_by_twos[i, "estimate"] <- beta_hat_d_bkl
     }
-
+  
+    # Rescale weights to sum to 1
     two_by_twos <- scale_weights(two_by_twos)
     r_list <- list("beta_hat_w" = beta_hat_w,
                    "Omega" = Omega,
@@ -143,11 +149,17 @@ bacon <- function(formula,
   }
 }
 
+
 #' Unpack Variable Names from Formula
 #'
 #' @param formula formula call from bacon()
 #'
-#' @return a list with 3 elements: outcome_var, treated_var, control_vars
+#' @return A list with 3 elements: 
+#' \item{outcome_var}{name of the outcome variable from the LHS of formula}
+#' \item{treated_var}{name of the treatment indicator variable, the first 
+#'  variable from the RHS of formula}
+#' \item{control_vars}{All variables on RHS of formula except the treated_var. 
+#'  Only need to know if length(control_vars) > 0}
 unpack_variable_names <- function(formula) {
   outcome_var <- as.character(formula)[2]
   right_side_vars <- as.character(formula)[3]
@@ -159,7 +171,10 @@ unpack_variable_names <- function(formula) {
   return(r_list)
 }
 
+
 #' Rename Variables
+#' 
+#' Rename id, time, outcome, and treatment indicator variables
 #'
 #' @param data a data.frame
 #' @param id_var character, name of id variable
@@ -167,7 +182,7 @@ unpack_variable_names <- function(formula) {
 #' @param outcome_var character, name of outcome variable
 #' @param treated_var character, name of binary treatment variable
 #'
-#' @return data.frame with renmaed columns
+#' @return A data.frame with renamed columns
 rename_vars <- function(data, id_var, time_var, outcome_var, treated_var) {
   colnames(data)[colnames(data) == id_var] <- "id"
   colnames(data)[colnames(data) == time_var] <- "time"
@@ -179,20 +194,25 @@ rename_vars <- function(data, id_var, time_var, outcome_var, treated_var) {
 
 #' Create Grid of Treatment Groups
 #'
-#' @param data dataset used to create groups - MUST obey naming convention used
-#' in `bacon()`. i.e. columns are ["id", "time", "outcome", "treated"]
+#' @param data a data.frame used to create groups - MUST obey naming convention 
+#' used in `bacon()`. i.e. columns are ["id", "time", "outcome", "treated"]
 #'
 #' @param return_merged_df Defaults to `FALSE` whether to return merged data
 #' as well as grid of treatment groups.
 #' @param control_vars list of control variables
 #'
-#' @return data.frame describing treatment groups and empty weight and estimate
-#' column set to 0.
+#' @return If return_merge_df is `TRUE` then a list with two elements:
+#' \item{two_by_twos}{data.frame with all treatment group dyads and NA 
+#'  weight/estimate columns}
+#' \item{data}{updated data.frame with the new variable treat_time}
+#' 
+#' If return_merge_df is `FALSE` then only the two_by_twos data.frame is 
+#'  returned
 create_treatment_groups <- function(data, control_vars,
                                     return_merged_df = FALSE) {
   df_treat <- data[data$treated == 1, ]
   df_treat <- df_treat[, c("id", "time")]
-  df_treat <- stats::aggregate(time ~ id,  data = df_treat, FUN = min)
+  df_treat <- aggregate(time ~ id,  data = df_treat, FUN = min)
   colnames(df_treat) <- c("id", "treat_time")
   data <- merge(data, df_treat, by = "id", all.x = T)
   data[is.na(data$treat_time), "treat_time"] <- 99999
@@ -208,7 +228,8 @@ create_treatment_groups <- function(data, control_vars,
   }
 
   if (length(control_vars) == 0) {
-    # create data.frame of all posible 2x2 estimates
+    # Create data.frame of all posible 2x2 estimates. Dyads may appear twice as
+    # treatment groups can play the roll of both earlier and later treated
     two_by_twos <- expand.grid(unique(data$treat_time),
                                unique(data$treat_time))
     colnames(two_by_twos) <- c("treated", "untreated")
@@ -219,6 +240,8 @@ create_treatment_groups <- function(data, control_vars,
     two_by_twos <- two_by_twos[!(two_by_twos$treated == min(data$time)), ]
     two_by_twos[, c("estimate", "weight")] <- NA
   } else if (length(control_vars) > 0) {
+    # In the controlled decomposition, each dyad only appears once becasue we 
+    # do not make the distinction between earlier vs later treated
     two_by_twos <- data.frame()
     for (i in unique(data$treat_time[data$treat_time != 99999])) {
       for (j in unique(data$treat_time)) {
@@ -240,6 +263,7 @@ create_treatment_groups <- function(data, control_vars,
   }
   return(return_data)
 }
+
 
 #' Subset Data
 #'
@@ -264,9 +288,10 @@ subset_data <- function(data, treated_group, untreated_group) {
   return(data)
 }
 
+
 #' Calculate Weights for 2x2 Grid (uncontrolled)
 #'
-#'  Calculated weights using:
+#'  Calculated weights for the uncontrolled decomposition using:
 #'  n_u - observations in untreated group,
 #'  n_k - observations in earlier treated group,
 #'  n_l - observations in later treated group,
@@ -311,22 +336,56 @@ calculate_weights <- function(data,
   return(weight1)
 }
 
+
 #' Scale Weights
 #'
 #' scale_weights scales the two_by_two weights so that they sum to 1
 #'
 #' @param two_by_twos data.frame containing 2x2 weights
 #'
-#' @return two_by_twos data frame with resaled weight column
+#' @return two_by_twos data.frame with rescaled weight column
 scale_weights <- function(two_by_twos) {
   sum_weight <- sum(two_by_twos$weight)
   two_by_twos$weight <- two_by_twos$weight / sum_weight
   return(two_by_twos)
 }
 
+
+#' Run Frisch-Waugh-Lowell Regression
+#'
+#' Predicts treatment using time-varing covariates and calculates predicted 
+#'  values/residuals
+#'
+#' @param data a data.frame
+#' @param control_formula a fomula
+#'
+#' @return updated data.frame with predictions/residuals (and their
+#'  transformations) from the FWL regession
+run_fwl <- function(data, control_formula) {
+  fit_fwl <- lm(control_formula, data = data)
+  data$p <- predict(fit_fwl)
+  data$d <- fit_fwl$residuals
+  data$d_it <- data$d
+  
+  # demean residulas
+  data$d_i_bar <- ave(data$d, data$id)
+  data$d_t_bar <- ave(data$d_it, data$time)
+  data$d_bar_bar <- mean(data$d_it)
+  data$d_it_til <- data$d_it - data$d_i_bar - data$d_t_bar + data$d_bar_bar
+  
+  data$d_kt_bar <- ave(data$d_it, data$treat_time, data$time)
+  data$d_k_bar <- ave(data$d_it, data$treat_time)
+  data$d_ikt_til <- data$d_it - data$d_i_bar - (data$d_kt_bar - data$d_k_bar)
+  data$d_kt_til <- (data$d_kt_bar - data$d_k_bar) - 
+                   (data$d_t_bar - data$d_bar_bar)
+  
+  return(data)
+}
+
+
 #' Calculate Omega
 #'
-#' Calculate the weight for the within estimate
+#' Calculate the weight for the within estimate in the controlled decompositon
 #'
 #' @param data a data frame with the columns d_ikt_til and d_it_til
 #'
@@ -342,9 +401,12 @@ calculate_Omega <- function(data) {
 
 #' Calculate 1 - Omega
 #'
-#' Calculate the weight for the between estimates
+#' Calculate the weight for the between estimates. This is used for testing 
+#'  purposes only.
 #'
 #' @param data a data frame with the columns d_kt_til and d_it_til
+#' 
+#' @return 1 - Omega
 calculate_one_minus_Omega <- function(data) {
   N <- nrow(data)
   Vd_b <- var(data$d_kt_til) * (N - 1) / N
@@ -352,6 +414,7 @@ calculate_one_minus_Omega <- function(data) {
   one_minus_Omega <- Vd_b / V_d
   return(one_minus_Omega)
 }
+
 
 #' Calculate Within Estimate
 #'
@@ -366,7 +429,11 @@ calculate_beta_hat_w <- function(data) {
   return(beta_hat_w)
 }
 
-#' CalculateBetween Estimate
+
+#' Calculate Between Estimate
+#' 
+#' Calculate the overall between estimate (not decomposed by treatement group 
+#'  dyads). This is used for testing purposes only.
 #'
 #' @param data a data.frame with the columns outcome and d_kt_til
 #'
@@ -379,45 +446,19 @@ calculate_beta_hat_b <- function(data) {
   return(beta_hat_b)
 }
 
-#' Run Frisch-Waugh-Lowell Regression
-#'
-#' Predict treatment using time varing covariates and calculates
-#'
-#' @param data a data.frame
-#' @param control_formula a fomula
-#'
-#' @return data, a data.frame with predictions/residuals (and their
-#'  transfirmations) from FWL regession
-run_fwl <- function(data, control_formula) {
-  fit_fwl <- lm(control_formula, data = data)
-  data$p <- predict(fit_fwl)
-  data$d <- fit_fwl$residuals
-  data$d_it <- data$d
 
-  # demean residulas
-  data$d_i_bar <- ave(data$d, data$id)
-  data$d_t_bar <- ave(data$d_it, data$time)
-  data$d_bar_bar <- mean(data$d_it)
-  data$d_it_til <- data$d_it - data$d_i_bar - data$d_t_bar + data$d_bar_bar
-
-  data$d_kt_bar <- ave(data$d_it, data$treat_time, data$time)
-  data$d_k_bar <- ave(data$d_it, data$treat_time)
-  data$d_ikt_til <- data$d_it - data$d_i_bar - (data$d_kt_bar - data$d_k_bar)
-  data$d_kt_til <- (data$d_kt_bar - data$d_k_bar) -
-                   (data$d_t_bar - data$d_bar_bar)
-
-  return(data)
-}
-
-#' Collapse Xs and Predicted Treatment
+#' Collapse Control Variable and Predicted Treatment
 #'
-#' Collapse Xs and predicted treatment to treatmet group/time level.
+#' Collapse controll variables and predicted treatment to treatment group/time 
+#'  level.
 #'
 #' @param data a data.frame
 #' @param control_formula, a formula
 #'
-#' @return a list of data (a data.frame) and g_control_formula, the formula with
-#'  the group level variable names
+#' @return a list of two elements:
+#' \item{data}{updated data frame with new treatment group/time level variables} 
+#' \item{g_control_formula}{the control formula but with group level variable 
+#'  names}
 collapse_x_p <- function(data, control_formula) {
   # Group level Xs
   f1 <- update(control_formula, . ~ . - factor(time) - factor(id) - 1)
@@ -442,12 +483,14 @@ collapse_x_p <- function(data, control_formula) {
   return(r_list)
 }
 
+
 #' Calculate Treatment Variance
 #'
 #' @param data a data.frame
 #'
-#' @return a list of data (a data.frame) and VD, the varince of the demeaned
-#'  treatment variable
+#' @return a list of two items:
+#' \item{data}{a data.frame with the new demeaned treatment variable}
+#' \item{VD}{the varince of the demeaned treatment variable}
 calc_VD <- function(data) {
   fit_D <- lm(treated ~ factor(id) + factor(time), data = data)
   data$Dtilde <- fit_D$residuals
@@ -457,11 +500,15 @@ calc_VD <- function(data) {
   return(r_list)
 }
 
-#' Partial Out FE from Group Level Xs and p
+
+#' Partial Out FE
+#' 
+#' Partial out time and unit fixed effects from group level control and
+#'  and predicted treatment variables
 #'
-#' @param data, a data.frame with the variables in the control formula and
+#' @param data, a data.frame with the variables in the g_control_formula and
 #'  p
-#' @param g_control_formula control formula with group level variables
+#' @param g_control_formula control formula with group level variable names
 #'
 #' @return updated data.frame with new partialled out group level variables
 partial_group_x <- function(data, g_control_formula) {
@@ -474,11 +521,12 @@ partial_group_x <- function(data, g_control_formula) {
   return(data)
 }
 
+
 #' Calculate pgjtile and Rsq
 #'
-#' @param data, a data.frame with the variables in the control formula and
+#' @param data, a data.frame with the variables in g_control_formula and
 #'  Dtilde
-#' @param g_control_formula control formula with group level variables
+#' @param g_control_formula control formula with group level variable names
 #'
 #' @return a list with two elements:
 #' \item{data}{updated data.frame with new variable pgjtilde}
@@ -497,6 +545,7 @@ calc_pgjtile <- function(data, g_control_formula) {
   return(r_list)
 }
 
+
 #' Calculate Vdp
 #'
 #' @param data a data.frame with the variables g_p, id, time, and ptilde
@@ -514,11 +563,12 @@ calc_Vdp <- function(data) {
   return(r_list)
 }
 
+
 #' Calculate BD
 #'
 #' @param data a data.frame with all variables in the g_control_formula,
 #'  outcome, treated, id, and time
-#' @param g_control_formula control formula with group level variables
+#' @param g_control_formula control formula with group level variable names
 #' @return BD
 calc_BD <- function(data, g_control_formula) {
   BD_formula <- update(g_control_formula,
@@ -527,6 +577,7 @@ calc_BD <- function(data, g_control_formula) {
   BD <- fit_BD$coefficients["treated"]
   return(BD)
 }
+
 
 #' Calculate Bb
 #'
@@ -540,7 +591,8 @@ calc_Bb <- function(data) {
   return(Bb)
 }
 
-#' Calculate Covariate Adjusted Between Beta Hat
+
+#' Calculate Dyad Covariate Adjusted Between Beta Hat 
 #'
 #' @param Rsq R squared from the regression in calc_pgjtilde
 #' @param VD variance of the demeaned treatment indicator (in the dyad)
@@ -556,7 +608,7 @@ calculate_beta_hat_d_bkl <- function(Rsq, VD, BD, Vdp, Bb) {
   return(beta_hat_d_bkl)
 }
 
-#' Calculate Weight (Controlled)
+#' Calculate Dyad Weight (Covariate Adjusted)
 #'
 #' @param N observations in dyad
 #' @param Rsq R squared from the regression in calc_pgjtilde
@@ -569,7 +621,8 @@ calculate_s_kl <- function(N, Rsq, VD, Vdp) {
   return(s_kl)
 }
 
-#' Calculates Controlled Betas and Weights
+
+#' Calculate Covariate Adjusted Betas and Weights
 #'
 #' Wrapper function for finding the dyad beta/weight in the controled
 #'  decomposition

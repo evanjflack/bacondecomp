@@ -12,9 +12,10 @@ run_fwl(data, control_formula)
 \item{control_formula}{a fomula}
 }
 \value{
-data, a data.frame with predictions/residuals (and their
- transfirmations) from FWL regession
+updated data.frame with predictions/residuals (and their
+ transformations) from the FWL regession
 }
 \description{
-Predict treatment using time varing covariates and calculates
+Predicts treatment using time-varing covariates and calculates predicted 
+ values/residuals
 }

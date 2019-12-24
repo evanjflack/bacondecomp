@@ -10,7 +10,12 @@ unpack_variable_names(formula)
 \item{formula}{formula call from bacon()}
 }
 \value{
-a list with 3 elements: outcome_var, treated_var, control_vars
+A list with 3 elements: 
+\item{outcome_var}{name of the outcome variable from the LHS of formula}
+\item{treated_var}{name of the treatment indicator variable, the first 
+ variable from the RHS of formula}
+\item{control_vars}{All variables on RHS of formula except the treated_var. 
+ Only need to know if length(control_vars) > 0}
 }
 \description{
 Unpack Variable Names from Formula

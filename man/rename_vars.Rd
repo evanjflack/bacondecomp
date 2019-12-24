@@ -18,8 +18,8 @@ rename_vars(data, id_var, time_var, outcome_var, treated_var)
 \item{treated_var}{character, name of binary treatment variable}
 }
 \value{
-data.frame with renmaed columns
+A data.frame with renamed columns
 }
 \description{
-Rename Variables
+Rename id, time, outcome, and treatment indicator variables
 }

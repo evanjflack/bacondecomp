@@ -7,10 +7,10 @@
 calc_BD(data, g_control_formula)
 }
 \arguments{
-\item{data}{a data.frame with all variables in the g_control_formula, 
+\item{data}{a data.frame with all variables in the g_control_formula,
 outcome, treated, id, and time}
 
-\item{g_control_formula}{control formula with group level variables}
+\item{g_control_formula}{control formula with group level variable names}
 }
 \value{
 BD

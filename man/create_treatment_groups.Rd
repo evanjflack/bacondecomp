@@ -7,8 +7,8 @@
 create_treatment_groups(data, control_vars, return_merged_df = FALSE)
 }
 \arguments{
-\item{data}{dataset used to create groups - MUST obey naming convention used
-in `bacon()`. i.e. columns are ["id", "time", "outcome", "treated"]}
+\item{data}{a data.frame used to create groups - MUST obey naming convention 
+used in `bacon()`. i.e. columns are ["id", "time", "outcome", "treated"]}
 
 \item{control_vars}{list of control variables}
 
@@ -16,8 +16,13 @@ in `bacon()`. i.e. columns are ["id", "time", "outcome", "treated"]}
 as well as grid of treatment groups.}
 }
 \value{
-data.frame describing treatment groups and empty weight and estimate
-column set to 0.
+If return_merge_df is `TRUE` then a list with two elements:
+\item{two_by_twos}{data.frame with all treatment group dyads and NA 
+ weight/estimate columns}
+\item{data}{updated data.frame with the new variable treat_time}
+
+If return_merge_df is `FALSE` then only the two_by_twos data.frame is 
+ returned
 }
 \description{
 Create Grid of Treatment Groups

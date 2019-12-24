@@ -17,7 +17,7 @@ calculate_weights(data, treated_group, untreated_group)
 Scalar weight for 2x2 grid
 }
 \description{
-Calculated weights using:
+Calculated weights for the uncontrolled decomposition using:
  n_u - observations in untreated group,
  n_k - observations in earlier treated group,
  n_l - observations in later treated group,

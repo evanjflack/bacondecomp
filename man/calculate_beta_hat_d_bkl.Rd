@@ -2,7 +2,7 @@
 % Please edit documentation in R/bacon.R
 \name{calculate_beta_hat_d_bkl}
 \alias{calculate_beta_hat_d_bkl}
-\title{Calculate Covariate Adjusted Between Beta Hat}
+\title{Calculate Dyad Covariate Adjusted Between Beta Hat}
 \usage{
 calculate_beta_hat_d_bkl(Rsq, VD, BD, Vdp, Bb)
 }
@@ -11,17 +11,17 @@ calculate_beta_hat_d_bkl(Rsq, VD, BD, Vdp, Bb)
 
 \item{VD}{variance of the demeaned treatment indicator (in the dyad)}
 
-\item{BD}{coeffieicient on treatment from a regression of the outcome on 
+\item{BD}{coeffieicient on treatment from a regression of the outcome on
 treatment and group level control variables with unite and time FE}
 
 \item{Vdp}{variance of dp (pgjtilde - ptilde)}
 
-\item{Bb}{coefficient on dp from a regression of the outcome on dp with unit 
+\item{Bb}{coefficient on dp from a regression of the outcome on dp with unit
 and time fixed effects}
 }
 \value{
 dyad's covariate adjusted between estimate
 }
 \description{
-Calculate Covariate Adjusted Between Beta Hat
+Calculate Dyad Covariate Adjusted Between Beta Hat
 }

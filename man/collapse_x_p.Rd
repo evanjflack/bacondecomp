@@ -2,7 +2,7 @@
 % Please edit documentation in R/bacon.R
 \name{collapse_x_p}
 \alias{collapse_x_p}
-\title{Collapse Xs and Predicted Treatment}
+\title{Collapse Control Variable and Predicted Treatment}
 \usage{
 collapse_x_p(data, control_formula)
 }
@@ -12,9 +12,12 @@ collapse_x_p(data, control_formula)
 \item{control_formula, }{a formula}
 }
 \value{
-a list of data (a data.frame) and g_control_formula, the formula with
- the group level variable names
+a list of two elements:
+\item{data}{updated data frame with new treatment group/time level variables} 
+\item{g_control_formula}{the control formula but with group level variable 
+ names}
 }
 \description{
-Collapse Xs and predicted treatment to treatmet group/time level.
+Collapse controll variables and predicted treatment to treatment group/time 
+ level.
 }

@@ -7,13 +7,13 @@
 calc_pgjtile(data, g_control_formula)
 }
 \arguments{
-\item{data, }{a data.frame with the variables in the control formula and 
+\item{data, }{a data.frame with the variables in g_control_formula and
 Dtilde}
 
-\item{g_control_formula}{control formula with group level variables}
+\item{g_control_formula}{control formula with group level variable names}
 }
 \value{
-a list with two elements: 
+a list with two elements:
 \item{data}{updated data.frame with new variable pgjtilde}
 \item{Rsq}{Rsq from the regression to generate pgjtilde}
 }

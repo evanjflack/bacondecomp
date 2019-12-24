@@ -2,7 +2,7 @@
 % Please edit documentation in R/bacon.R
 \name{calc_controlled_beta_weights}
 \alias{calc_controlled_beta_weights}
-\title{Calculates Controlled Betas and Weights}
+\title{Calculate Covariate Adjusted Betas and Weights}
 \usage{
 calc_controlled_beta_weights(data, g_control_formula)
 }
@@ -17,6 +17,6 @@ a list with two elements
 \item{beta_hat_d_bkl}{the covariate adjusted 2x2 estimate for the dyad kl}
 }
 \description{
-Wrapper function for finding the dyad beta/weight in the controled 
+Wrapper function for finding the dyad beta/weight in the controled
  decomposition
 }
