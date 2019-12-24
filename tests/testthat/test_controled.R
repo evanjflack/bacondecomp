@@ -71,3 +71,12 @@ beta_hat_b_two_by_twos <- weighted.mean(two_by_twos$estimate, two_by_twos$weight
 test_that("Equation 26 Correct", {
   expect_equal(beta_hat_b, beta_hat_b_two_by_twos)
 })
+
+
+
+# Recover Two Way FE
+
+test_that("Two Way FE Recovered, Equation 27", {
+  expect_equal(beta_hat_b_two_by_twos * (1 - ret_bacon$Omega) + ret_bacon$Omega * ret_bacon$beta_hat_w,
+               beta_hat_dd_two_way)
+})
