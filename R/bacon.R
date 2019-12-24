@@ -52,6 +52,8 @@ bacon <- function(formula,
                   data,
                   id_var,
                   time_var) {
+  
+  formula <- formula(terms(formula, data = data))
 
   # Unpack variable names and rename variables
   vars <- unpack_variable_names(formula)

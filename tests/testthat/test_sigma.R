@@ -6,6 +6,8 @@ formula <- l_homicide ~ post + l_pop + l_income
 id_var <- "state"
 time_var <- "year"
 
+formula <- formula(terms(formula, data = df_test_orig))
+
 vars <- unpack_variable_names(formula)
 outcome_var <- vars$outcome_var
 treated_var <- vars$treated_var
