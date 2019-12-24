@@ -162,6 +162,8 @@ bacon <- function(formula,
 #'  variable from the RHS of formula}
 #' \item{control_vars}{All variables on RHS of formula except the treated_var. 
 #'  Only need to know if length(control_vars) > 0}
+#' 
+#' @noRd
 unpack_variable_names <- function(formula) {
   outcome_var <- as.character(formula)[2]
   right_side_vars <- as.character(formula)[3]
@@ -185,6 +187,8 @@ unpack_variable_names <- function(formula) {
 #' @param treated_var character, name of binary treatment variable
 #'
 #' @return A data.frame with renamed columns
+#' 
+#' @noRd
 rename_vars <- function(data, id_var, time_var, outcome_var, treated_var) {
   colnames(data)[colnames(data) == id_var] <- "id"
   colnames(data)[colnames(data) == time_var] <- "time"
@@ -210,6 +214,8 @@ rename_vars <- function(data, id_var, time_var, outcome_var, treated_var) {
 #' 
 #' If return_merge_df is `FALSE` then only the two_by_twos data.frame is 
 #'  returned
+#'  
+#' @noRd
 create_treatment_groups <- function(data, control_vars,
                                     return_merged_df = FALSE) {
   df_treat <- data[data$treated == 1, ]
@@ -280,6 +286,8 @@ create_treatment_groups <- function(data, control_vars,
 #'  untreated
 #'
 #' @return subsetted data.frame
+#' 
+#' @noRd
 subset_data <- function(data, treated_group, untreated_group) {
   data <- data[data$treat_time %in% c(treated_group, untreated_group), ]
   if (treated_group < untreated_group) {
@@ -305,6 +313,8 @@ subset_data <- function(data, treated_group, untreated_group) {
 #' @param untreated_group the identifier of the untreated group
 #'
 #' @return Scalar weight for 2x2 grid
+#' 
+#' @noRd
 calculate_weights <- function(data,
                               treated_group,
                               untreated_group){
@@ -346,12 +356,23 @@ calculate_weights <- function(data,
 #' @param two_by_twos data.frame containing 2x2 weights
 #'
 #' @return two_by_twos data.frame with rescaled weight column
+#' 
+#' @noRd
 scale_weights <- function(two_by_twos) {
   sum_weight <- sum(two_by_twos$weight)
   two_by_twos$weight <- two_by_twos$weight / sum_weight
   return(two_by_twos)
 }
 
+#' Classify Estimate Type
+#' 
+#' Classify the type of 2x2 estimate
+#' 
+#' @param two_by_twos data.frame of 2x2 estimates and weights
+#' 
+#' @return updated two_by_twos data.frame with etaimate type variable
+#' 
+#' @noRd
 classify_type <- function(two_by_twos) {
   two_by_twos[, "type"] <- ifelse(two_by_twos$untreated == 99999, 
                                   "Treated vs Untreated", 
@@ -372,6 +393,8 @@ classify_type <- function(two_by_twos) {
 #'
 #' @return updated data.frame with predictions/residuals (and their
 #'  transformations) from the FWL regession
+#'  
+#' @noRd
 run_fwl <- function(data, control_formula) {
   fit_fwl <- lm(control_formula, data = data)
   data$p <- predict(fit_fwl)
@@ -401,6 +424,8 @@ run_fwl <- function(data, control_formula) {
 #' @param data a data frame with the columns d_ikt_til and d_it_til
 #'
 #' return Omega
+#' 
+#' @noRd
 calculate_Omega <- function(data) {
   # TODO Test that within + between = 1
   N <- nrow(data)
@@ -418,6 +443,8 @@ calculate_Omega <- function(data) {
 #' @param data a data frame with the columns d_kt_til and d_it_til
 #' 
 #' @return 1 - Omega
+#' 
+#' @noRd
 calculate_one_minus_Omega <- function(data) {
   N <- nrow(data)
   Vd_b <- var(data$d_kt_til) * (N - 1) / N
@@ -432,6 +459,8 @@ calculate_one_minus_Omega <- function(data) {
 #' @param data a data.frame with the columns outcome and d_ikt_til
 #'
 #' @return beta_hat_w, the within estimate
+#' 
+#' @noRd
 calculate_beta_hat_w <- function(data) {
   N <- nrow(data)
   C <- cov(data$outcome, data$d_ikt_til) * (N - 1) / N
@@ -449,6 +478,8 @@ calculate_beta_hat_w <- function(data) {
 #' @param data a data.frame with the columns outcome and d_kt_til
 #'
 #' @return beta_hat_w, the between estimate
+#' 
+#' @noRd
 calculate_beta_hat_b <- function(data) {
   N <- nrow(data)
   C <- cov(data$outcome, data$d_kt_til) * (N - 1) / N
@@ -470,6 +501,8 @@ calculate_beta_hat_b <- function(data) {
 #' \item{data}{updated data frame with new treatment group/time level variables} 
 #' \item{g_control_formula}{the control formula but with group level variable 
 #'  names}
+#'  
+#' @noRd
 collapse_x_p <- function(data, control_formula) {
   # Group level Xs
   f1 <- update(control_formula, . ~ . - factor(time) - factor(id) - 1)
@@ -502,6 +535,8 @@ collapse_x_p <- function(data, control_formula) {
 #' @return a list of two items:
 #' \item{data}{a data.frame with the new demeaned treatment variable}
 #' \item{VD}{the varince of the demeaned treatment variable}
+#' 
+#' @noRd
 calc_VD <- function(data) {
   fit_D <- lm(treated ~ factor(id) + factor(time), data = data)
   data$Dtilde <- fit_D$residuals
@@ -522,6 +557,8 @@ calc_VD <- function(data) {
 #' @param g_control_formula control formula with group level variable names
 #'
 #' @return updated data.frame with new partialled out group level variables
+#' 
+#' @noRd
 partial_group_x <- function(data, g_control_formula) {
   g_vars <- unlist(strsplit(as.character(g_control_formula)[2], " \\+ "))
   for (v in g_vars) {
@@ -542,6 +579,8 @@ partial_group_x <- function(data, g_control_formula) {
 #' @return a list with two elements:
 #' \item{data}{updated data.frame with new variable pgjtilde}
 #' \item{Rsq}{Rsq from the regression to generate pgjtilde}
+#' 
+#' @noRd
 calc_pgjtile <- function(data, g_control_formula) {
   g_vars <- unlist(strsplit(as.character(g_control_formula)[2], " \\+ "))
   p_g_vars <- paste0("p_", g_vars)
@@ -564,6 +603,8 @@ calc_pgjtile <- function(data, g_control_formula) {
 #' @return list with two elements
 #' \item{data}{data.frame with new variables ptilde and dp}
 #' \item{Vdp}{Variance of dp}
+#' 
+#' @noRd
 calc_Vdp <- function(data) {
   N <- nrow(data)
   fit_p <- lm(g_p ~ factor(id) + factor(time), data = data)
@@ -581,6 +622,8 @@ calc_Vdp <- function(data) {
 #'  outcome, treated, id, and time
 #' @param g_control_formula control formula with group level variable names
 #' @return BD
+#' 
+#' @noRd
 calc_BD <- function(data, g_control_formula) {
   BD_formula <- update(g_control_formula,
                        outcome ~ treated + . + factor(id) + factor(time))
@@ -595,6 +638,8 @@ calc_BD <- function(data, g_control_formula) {
 #' @param data a data.frame with the variables outcome, dp, time, and id
 #'
 #' @return Bb
+#' 
+#' @noRd
 calc_Bb <- function(data) {
   fit_Bb <- lm(outcome ~ dp + factor(time) + factor(id),
                data = data)
@@ -614,6 +659,8 @@ calc_Bb <- function(data) {
 #'  and time fixed effects
 #'
 #' @return dyad's covariate adjusted between estimate
+#' 
+#' @noRd
 calculate_beta_hat_d_bkl <- function(Rsq, VD, BD, Vdp, Bb) {
   beta_hat_d_bkl <- ( (1 - Rsq) * VD * BD + Vdp * Bb) / ( (1 - Rsq) * VD + Vdp)
   return(beta_hat_d_bkl)
@@ -627,6 +674,8 @@ calculate_beta_hat_d_bkl <- function(Rsq, VD, BD, Vdp, Bb) {
 #' @param Vdp variance of dp (pgjtilde - ptilde)
 #'
 #' @return the weight given to the dyad's estimate
+#' 
+#' @noRd
 calculate_s_kl <- function(N, Rsq, VD, Vdp) {
   s_kl <- N ^ 2 * ( (1 - Rsq) * VD + Vdp)
   return(s_kl)
@@ -644,6 +693,8 @@ calculate_s_kl <- function(N, Rsq, VD, Vdp) {
 #' @return a list with two elements
 #' \item{s_kl}{the weight given to the dyad kl's estimate}
 #' \item{beta_hat_d_bkl}{the covariate adjusted 2x2 estimate for the dyad kl}
+#' 
+#' @noRd
 calc_controlled_beta_weights <- function(data, g_control_formula) {
   r_calc_VD <- calc_VD(data)
   VD <- r_calc_VD$VD

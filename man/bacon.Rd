@@ -11,7 +11,7 @@ bacon(formula, data, id_var, time_var)
 representation of the model to be fitted. Must be  of the form y ~ D + controls,
 where y is the outcome variable,  D is the binary
 treatment indicator, and `controls` can be any additional control variables. Do not
-include in the fixed effects in the formula.
+include the fixed effects in the formula.
 
 If using `.` notation must be of the form y ~ D + . - FE1 - FE2}
 
