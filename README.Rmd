@@ -41,7 +41,7 @@ install.packages("bacon")
 
 This is a basic example which shows you how to use the bacon() function to decompose the two-way fixed effects estimate of the effect of an education reform on future earnings following Goodman (2019, JOLE).
 
-```{r example}
+```{r example, fig.height = 4, fig.width = 6}
 library(bacon)
 df_bacon <- bacon(incearn_ln ~ reform_math,
                   data = bacon::math_reform,
@@ -59,7 +59,6 @@ ggplot(df_bacon) +
 
 ## References
 
-Goodman-Bacon, Andrew. 2018. "Difference-in-Differences with Variation in Treatment Timing." National Bureau
-of Economic Research Working Paper Series No. 25018. doi: 10.3386/w25018.
+Goodman-Bacon, Andrew. 2018. "Difference-in-Differences with Variation in Treatment Timing." National Bureau of Economic Research Working Paper Series No. 25018. doi: 10.3386/w25018.
 
 [Paper Link](https://cdn.vanderbilt.edu/vu-my/wp-content/uploads/sites/2318/2019/07/29170757/ddtiming_7_29_2019.pdf)
