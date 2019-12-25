@@ -1,14 +1,27 @@
+---
+output: github_document
+---
 
-![](https://github.com/evanjflack/bacon/workflows/R-CMD-check/badge.svg) [![Travis build status](https://travis-ci.org/evanjflack/bacon.svg?branch=master)](https://travis-ci.org/evanjflack/bacon) [![Coverage status](https://codecov.io/gh/evanjflack/bacon/branch/master/graph/badge.svg)](https://codecov.io/github/evanjflack/bacon?branch=master) [![Example Jupyter Notebook](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/evanjflack/bacon/master?filepath=index.ipynb)
+![](https://github.com/evanjflack/bacon/workflows/R-CMD-check/badge.svg)
+[![Travis build status](https://travis-ci.org/evanjflack/bacon.svg?branch=master)](https://travis-ci.org/evanjflack/bacon)
+[![Coverage status](https://codecov.io/gh/evanjflack/bacon/branch/master/graph/badge.svg)](https://codecov.io/github/evanjflack/bacon?branch=master)
+[![Example Jupyter Notebook](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/evanjflack/bacon/master?filepath=index.ipynb)
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
-bacon
-=====
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+# bacon
 
 `bacon` is a package with tools to perform the Goodman-Bacon decomposition for differences-in-differences with variation in treatment timing. The decomposition can be done with and without time-varying covariates.
 
-Installation
-------------
+## Installation
 
 You can install the released version of bacon from [CRAN](https://CRAN.R-project.org) with:
 
@@ -16,24 +29,19 @@ You can install the released version of bacon from [CRAN](https://CRAN.R-project
 install.packages("bacon")
 ```
 
-Functions
----------
+## Functions
+* `bacon()`: calculates all 2x2 differences-in-differences estimates and weights for the Bacon-Goodman decomposition.
 
--   `bacon()`: calculates all 2x2 differences-in-differences estimates and weights for the Bacon-Goodman decomposition.
+## Data
+* `math_refom`: Aggregated data from Goodman (2019, JOLE)
+* `castle`: Data from Cheng and Hoekstra (2013, JHR)
+* `divorce:` Data from Stevenson and Wolfers (2006, QJE)
 
-Data
-----
-
--   `math_refom`: Aggregated data from Goodman (2019, JOLE)
--   `castle`: Data from Cheng and Hoekstra (2013, JHR)
--   `divorce:` Data from Stevenson and Wolfers (2006, QJE)
-
-Example
--------
+## Example
 
 This is a basic example which shows you how to use the bacon() function to decompose the two-way fixed effects estimate of the effect of an education reform on future earnings following Goodman (2019, JOLE).
 
-``` r
+```{r example, fig.height = 4, fig.width = 6}
 library(bacon)
 df_bacon <- bacon(incearn_ln ~ reform_math,
                   data = bacon::math_reform,
@@ -49,10 +57,7 @@ ggplot(df_bacon) +
   labs(x = "Weight", y = "Estimate", shape = "Type")
 ```
 
-<img src="man/figures/README-example-1.png" width="100%" />
-
-References
-----------
+## References
 
 Goodman-Bacon, Andrew. 2018. "Difference-in-Differences with Variation in Treatment Timing." National Bureau of Economic Research Working Paper Series No. 25018. doi: 10.3386/w25018.
 

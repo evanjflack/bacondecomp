@@ -16,7 +16,7 @@
 math_reform
 }
 \description{
-A data set comntaining state/year level data on an educational reform and
+A data set containing state/year level data on an educational reform and
  future income. This is an aggregated version of the data used by Goodman
  (2019, JOLE) to estimate the effect of compulsory high school math
  coursework on future earnings.

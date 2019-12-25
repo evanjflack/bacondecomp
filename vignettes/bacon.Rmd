@@ -15,17 +15,17 @@ knitr::opts_chunk$set(
 ```
 
 ## Description
-`bacon()` is a function that decomposes two-way fixed effects models into all 2x2 estimates and their weights following Goodman-Bacon (2019). It can perform the decompostion with and without time-varying covariates.
+`bacon()` is a function that decomposes two-way fixed effects models into all 2x2 estimates and their weights following Goodman-Bacon (2019). It can perform the decomposition with and without time-varying covariates.
 
 ## Example: Castle Doctrine
-The following example comes from Cheng and Hoekstra (2013, JHR). The authors estimate the effect of "castle doctrines," state laws that make it easier to use lethal force in self defenense. The data set `castle` contains state/year level informaton from 2000-2010 on crime rates and whether or not the state had a castle doctrine in effect. Here we replicate the analysis on homicide rates. The key variables are :
+The following example comes from Cheng and Hoekstra (2013, JHR). The authors estimate the effect of "castle doctrines," state laws that make it easier to use lethal force in self defense. The data set `castle` contains state/year level information from 2000-2010 on crime rates and whether or not the state had a castle doctrine in effect. Here we replicate the analysis on homicide rates. The key variables are :
 
 * `state`
 * `year`
 * `l_homicide` log of the homicide rate
-* `post` indicaticator for whether a castle doctrine law was in effect
+* `post` indicator for whether a castle doctrine law was in effect
 
-Here, we perform the decompositin without time-varying controls, and make sure that the weighted average of the decomposition equals the two-way fixed effects estimate.
+Here, we perform the decomposition without time-varying controls, and make sure that the weighted average of the decomposition equals the two-way fixed effects estimate.
 
 ```{r castle, fig.width = 7}
 library(bacon)

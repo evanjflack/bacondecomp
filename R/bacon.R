@@ -1,8 +1,8 @@
 #' Goodman-Bacon Decomposition
 #'
-#' bacon() is a function that perfroms the Goodman-Bacon decomposition for
+#' bacon() is a function that performs the Goodman-Bacon decomposition for
 #'  differences-in-differences with variation in treatment timing (with or
-#'  wothout time-varying control variables).
+#'  without time-varying control variables).
 #'
 #' @param formula an object of class "\link[stats]{formula}": a symbolic
 #'  representation of the model to be fitted. Must be  of the form y ~ D + controls,

@@ -1,6 +1,6 @@
 #' Aggregated data from Goodman (In Press)
 #'
-#' A data set comntaining state/year level data on an educational reform and
+#' A data set containing state/year level data on an educational reform and
 #'  future income. This is an aggregated version of the data used by Goodman
 #'  (2019, JOLE) to estimate the effect of compulsory high school math
 #'  coursework on future earnings.
@@ -22,7 +22,7 @@
 #'   \item{st}{The state (unit of analysis).}
 #'   \item{year}{Calendar year (time).}
 #'   \item{l_homicide}{Log of state/year homicide rate}
-#'   \item{post}{Indictor for whether castle reform has been implemented}
+#'   \item{post}{Indicator whether castle reform has been implemented}
 #' }
 "castle"
 
