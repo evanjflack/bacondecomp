@@ -23,10 +23,11 @@ knitr::opts_chunk$set(
 
 ## Installation
 
-You can install the released version of bacon from [CRAN](https://CRAN.R-project.org) with:
+You can install the development version of `bacon` from GitHub:
 
 ``` r
-install.packages("bacon")
+library(devtools)
+install_github("evanjflack/bacon")
 ```
 
 ## Functions
