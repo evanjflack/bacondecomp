@@ -8,12 +8,12 @@ bacon(formula, data, id_var, time_var)
 }
 \arguments{
 \item{formula}{an object of class "\link[stats]{formula}": a symbolic
-representation of the model to be fitted. Must be  of the form y ~ D + controls,
-where y is the outcome variable,  D is the binary
-treatment indicator, and `controls` can be any additional control variables. Do not
-include the fixed effects in the formula.
+ representation of the model to be fitted. Must be  of the form y ~ D + controls,
+ where y is the outcome variable,  D is the binary
+ treatment indicator, and `controls` can be any additional control variables. Do not
+ include the fixed effects in the formula.
 
-If using `.` notation must be of the form y ~ D + . - FE1 - FE2}
+ If using `.` notation must be of the form y ~ D + . - FE1 - FE2}
 
 \item{data}{a data.frame containing the variables in the model.}
 
