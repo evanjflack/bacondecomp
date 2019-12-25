@@ -1,7 +1,7 @@
 Package: bacon
 Type: Package
 Title: Bacon Decomposition
-Version: 0.1.0.9000
+Version: 0.1.0
 Authors@R: c(
   person("Evan", "Flack", email = "evanjflack@gmail.com", role = c("aut", "cre")),
   person("Edward", "Jee", role = c("aut"))
