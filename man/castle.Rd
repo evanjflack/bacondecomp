@@ -9,7 +9,7 @@
   \item{st}{The state (unit of analysis).}
   \item{year}{Calendar year (time).}
   \item{l_homicide}{Log of state/year homicide rate}
-  \item{post}{Indictor for whether castle reform has been implemented}
+  \item{post}{Indicator whether castle reform has been implemented}
 }}
 \usage{
 castle

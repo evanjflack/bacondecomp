@@ -34,9 +34,9 @@ If not control variables are included then only a data.frame with the 2x2
  estimates and weights is returned.
 }
 \description{
-bacon() is a function that perfroms the Goodman-Bacon decomposition for
+bacon() is a function that performs the Goodman-Bacon decomposition for
  differences-in-differences with variation in treatment timing (with or
- wothout time-varying control variables).
+ without time-varying control variables).
 }
 \examples{
 # Castle Doctrine (Uncontrolled)
