@@ -1,4 +1,4 @@
-Package: bacon
+Package: bacondecomp
 Type: Package
 Title: Goodman-Bacon Decomposition
 Version: 0.1.0

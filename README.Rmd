@@ -4,7 +4,9 @@ output: github_document
 
 ![](https://github.com/evanjflack/bacon/workflows/R-CMD-check/badge.svg)
 [![Travis build status](https://travis-ci.org/evanjflack/bacon.svg?branch=master)](https://travis-ci.org/evanjflack/bacon)
+
 [![Coverage status](https://codecov.io/gh/evanjflack/bacon/branch/master/graph/badge.svg)](https://codecov.io/github/evanjflack/bacon?branch=master)
+
 [![Example Jupyter Notebook](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/evanjflack/bacon/master?filepath=index.ipynb)
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
@@ -17,9 +19,9 @@ knitr::opts_chunk$set(
   out.width = "100%"
 )
 ```
-# bacon
+# bacondecomp
 
-`bacon` is a package with tools to perform the Goodman-Bacon decomposition for differences-in-differences with variation in treatment timing. The decomposition can be done with and without time-varying covariates.
+`bacondecomp` is a package with tools to perform the Goodman-Bacon decomposition for differences-in-differences with variation in treatment timing. The decomposition can be done with and without time-varying covariates.
 
 ## Installation
 
@@ -27,7 +29,7 @@ You can install the development version of `bacon` from GitHub:
 
 ``` r
 library(devtools)
-install_github("evanjflack/bacon")
+install_github("evanjflack/bacondecomp")
 ```
 
 ## Functions
@@ -43,7 +45,7 @@ install_github("evanjflack/bacon")
 This is a basic example which shows you how to use the bacon() function to decompose the two-way fixed effects estimate of the effect of an education reform on future earnings following Goodman (2019, JOLE).
 
 ```{r example, fig.height = 4, fig.width = 6}
-library(bacon)
+library(bacondecomp)
 df_bacon <- bacon(incearn_ln ~ reform_math,
                   data = bacon::math_reform,
                   id_var = "state",
