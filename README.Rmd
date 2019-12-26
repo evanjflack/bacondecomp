@@ -4,9 +4,7 @@ output: github_document
 
 ![](https://github.com/evanjflack/bacon/workflows/R-CMD-check/badge.svg)
 [![Travis build status](https://travis-ci.org/evanjflack/bacon.svg?branch=master)](https://travis-ci.org/evanjflack/bacon)
-
 [![Coverage status](https://codecov.io/gh/evanjflack/bacon/branch/master/graph/badge.svg)](https://codecov.io/github/evanjflack/bacon?branch=master)
-
 [![Example Jupyter Notebook](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/evanjflack/bacon/master?filepath=index.ipynb)
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
@@ -47,7 +45,7 @@ This is a basic example which shows you how to use the bacon() function to decom
 ```{r example, fig.height = 4, fig.width = 6}
 library(bacondecomp)
 df_bacon <- bacon(incearn_ln ~ reform_math,
-                  data = bacon::math_reform,
+                  data = bacondecomp::math_reform,
                   id_var = "state",
                   time_var = "class")
 
