@@ -1,4 +1,4 @@
 library(testthat)
-library(bacon)
+library(bacondecomp)
 
-test_check("bacon")
+test_check("bacondecomp")

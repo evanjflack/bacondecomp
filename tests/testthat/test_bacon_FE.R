@@ -1,12 +1,10 @@
-library(bacon)
-
 # These tests calculates the bacon decomposition and then takes the weighted sum
 # of the decomposition which should return the traditional two-way FE estimates
 
 # Uncontrolled -----------------------------------------------------------------
 # Bacon decomp
 df_bacon <- bacon(l_homicide ~ post,
-                  data = bacon::castle,
+                  data = bacondecomp::castle,
                   id_var = "state",
                   time_var = "year")
 
@@ -14,7 +12,7 @@ two_way_bacon_coef <- sum(df_bacon$estimate * df_bacon$weight)
 
 # Two way FE
 two_way_fe <- lm(l_homicide ~ post + factor(state) + factor(year),
-                 data = bacon::castle)
+                 data = bacondecomp::castle)
 two_way_fe_coef <- two_way_fe$coefficients["post"]
 names(two_way_fe_coef) <- NULL
 
@@ -23,7 +21,7 @@ test_that("Two-way FE recovered", {
 })
 
 # Controlled -------------------------------------------------------------------
-df <- bacon::castle[, c("state", "year", "l_homicide", "post", "l_income", 
+df <- bacondecomp::castle[, c("state", "year", "l_homicide", "post", "l_income", 
                         "l_pop")]
 test_formula <- l_homicide ~ post + . + l_pop - state - year
 ret_bacon <- bacon(test_formula, 

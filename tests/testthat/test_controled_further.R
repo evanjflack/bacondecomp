@@ -1,6 +1,4 @@
-library(bacon)
-
-df_test_orig <- bacon::castle 
+df_test_orig <- bacondecomp::castle 
 df_test_orig <- df_test_orig[, c("l_homicide",
                                  "l_pop",
                                  "l_income",

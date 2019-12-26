@@ -1,6 +1,3 @@
-library(bacon)
-
-
 # Formulas
 variables_unpacked <- unpack_variable_names(l_homicide ~ post + l_pop + l_income)
 

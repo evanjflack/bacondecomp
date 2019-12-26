@@ -1,7 +1,5 @@
-library(bacon)
-
 # These tests 
-df_test_orig <- bacon::castle
+df_test_orig <- bacondecomp::castle
 formula <- l_homicide ~ post + l_pop + l_income
 id_var <- "state"
 time_var <- "year"
@@ -63,7 +61,7 @@ test_that("Recover Two Way Coef Using EQN 25", {
 
 # Equation 26
 ret_bacon <- bacon(formula,
-                   data = bacon::castle,
+                   data = bacondecomp::castle,
                    id_var = "state",
                    time_var = "year")
 

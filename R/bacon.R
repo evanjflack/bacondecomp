@@ -29,7 +29,7 @@
 #' @examples
 #' # Castle Doctrine (Uncontrolled)
 #' df_bacon <- bacon(l_homicide ~ post,
-#'                   data = bacon::castle,
+#'                   data = bacondecomp::castle,
 #'                   id_var = "state",
 #'                   time_var = "year")
 #' \donttest{
@@ -42,7 +42,7 @@
 #'   }
 #' # Castle Doctrine (Controlled)
 #' ret_bacon <- bacon(l_homicide ~ post + l_pop + l_income,
-#'                    data = bacon::castle,
+#'                    data = bacondecomp::castle,
 #'                    id_var = "state",
 #'                    time_var = "year")
 #' df_bacon <- ret_bacon$two_by_twos
