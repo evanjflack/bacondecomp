@@ -1,9 +1,7 @@
-library(bacon)
-
 # These tests check that the correct ewrror message is returned
 
 # Unbalanced Panel
-castle <- bacon::castle
+castle <- bacondecomp::castle
 castle <- castle[-sample(1:nrow(castle), 1), ]
 
 test_that("Unbalanced panel error", {
@@ -14,7 +12,7 @@ test_that("Unbalanced panel error", {
 })
 
 # NA Observations
-castle <- bacon::castle
+castle <- bacondecomp::castle
 castle[-sample(1:nrow(castle), 1), "post"] <- NA
 
 test_that("NA error", {
@@ -25,7 +23,7 @@ test_that("NA error", {
 })
 
 # Weakly Increasing Treatment
-castle <- bacon::castle
+castle <- bacondecomp::castle
 castle[castle$state == "Alabama" & castle$year == 2009, "post"] <- 0
 test_that("Weakly Increasing Treatment", {
   expect_error(bacon(l_homicide ~ post,
