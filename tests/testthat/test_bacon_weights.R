@@ -1,5 +1,3 @@
-library(bacon)
-
 # This test mimics the setup of figure 2 and tests that calculate_weights()
 # computes the correct weights
 

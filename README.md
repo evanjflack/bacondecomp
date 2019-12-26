@@ -9,9 +9,9 @@ Notebook](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/evanj
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# bacon
+# bacondecomp
 
-`bacon` is a package with tools to perform the Goodman-Bacon
+`bacondecomp` is a package with tools to perform the Goodman-Bacon
 decomposition for differences-in-differences with variation in treatment
 timing. The decomposition can be done with and without time-varying
 covariates.
@@ -22,7 +22,7 @@ You can install the development version of `bacon` from GitHub:
 
 ``` r
 library(devtools)
-install_github("evanjflack/bacon")
+install_github("evanjflack/bacondecomp")
 ```
 
 ## Functions
@@ -43,9 +43,9 @@ to decompose the two-way fixed effects estimate of the effect of an
 education reform on future earnings following Goodman (2019, JOLE).
 
 ``` r
-library(bacon)
+library(bacondecomp)
 df_bacon <- bacon(incearn_ln ~ reform_math,
-                  data = bacon::math_reform,
+                  data = bacondecomp::math_reform,
                   id_var = "state",
                   time_var = "class")
 

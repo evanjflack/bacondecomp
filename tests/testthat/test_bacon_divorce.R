@@ -1,8 +1,4 @@
-library(bacon)
-
-
-
-divorce_df <- bacon::divorce
+divorce_df <- bacondecomp::divorce
 
 stevenson_wolfson_replicates <- c(
   1.6,

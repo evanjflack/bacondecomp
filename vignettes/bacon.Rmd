@@ -28,17 +28,17 @@ The following example comes from Cheng and Hoekstra (2013, JHR). The authors est
 Here, we perform the decomposition without time-varying controls, and make sure that the weighted average of the decomposition equals the two-way fixed effects estimate.
 
 ```{r castle, fig.width = 7}
-library(bacon)
+library(bacondecomp)
 
 df_bacon <- bacon(l_homicide ~ post,
-                  data = bacon::castle,
+                  data = bacondecomp::castle,
                   id_var = "state",
                   time_var = "year")
 coef_bacon <- sum(df_bacon$estimate * df_bacon$weight)
 print(paste("Weighted sum of decomposition =", round(coef_bacon, 4)))
 
 fit_tw <- lm(l_homicide ~ post + factor(state) + factor(year), 
-             data = bacon::castle)
+             data = bacondecomp::castle)
 print(paste("Two-way FE estimate =", round(fit_tw$coefficients[2], 4)))
 
 ```
@@ -60,7 +60,7 @@ We can also perform the decomposition including time varying controls. In this e
 
 ```{r cont}
 ret_bacon <- bacon(l_homicide ~ post + l_pop + l_income, 
-                   data = bacon::castle,
+                   data = bacondecomp::castle,
                    id_var = "state",
                    time_var = "year")
 beta_hat_w <- ret_bacon$beta_hat_w
@@ -72,7 +72,7 @@ print(paste("Weighted sum of decomposition =", round(bacon_coef_cont, 4)))
 
 two_way_fe_cont <- lm(l_homicide ~ post + l_pop + l_income + factor(state) + 
                         factor(year), 
-                      data = bacon::castle)
+                      data = bacondecomp::castle)
 two_way_fe_coef_cont <- two_way_fe_cont$coefficients["post"]
 print(paste("Two way FE estimate =", round(two_way_fe_coef_cont, 4)))
 ```
