@@ -1,7 +1,7 @@
 
 ![](https://github.com/evanjflack/bacon/workflows/R-CMD-check/badge.svg)
-[![Travis build
-status](https://travis-ci.org/evanjflack/bacon.svg?branch=master)](https://travis-ci.org/evanjflack/bacon)
+[![Build
+Status](https://travis-ci.com/evanjflack/bacondecomp.svg?branch=master)](https://travis-ci.com/evanjflack/bacondecomp)
 [![Coverage
 status](https://codecov.io/gh/evanjflack/bacon/branch/master/graph/badge.svg)](https://codecov.io/github/evanjflack/bacon?branch=master)
 [![Example Jupyter
@@ -18,7 +18,7 @@ covariates.
 
 ## Installation
 
-You can install the development version of `bacon` from GitHub:
+You can install the development version of `bacondecomp` from GitHub:
 
 ``` r
 library(devtools)
