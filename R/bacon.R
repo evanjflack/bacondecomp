@@ -60,19 +60,28 @@ bacon <- function(formula,
 
   # Evaluate formula in data environment
   formula <- formula(terms(formula, data = data))
+  
   # Unpack variable names and rename variables
   vars <- unpack_variable_names(formula)
   outcome_var <- vars$outcome_var
   treated_var <- vars$treated_var
   control_vars <- vars$control_vars
   data <- rename_vars(data, id_var, time_var, outcome_var, treated_var)
-
+  
   # Check for NA observations
   nas <- sum(is.na(data[, c("id", "time", "outcome", "treated")]))
+  if (length(control_vars > 0)) {
+    control_formula <- update(
+      formula,
+      paste0("treated ~ . -", treated_var)
+    )
+    nas <- nas + sum(is.na(model.matrix(control_formula, data = data)))
+  }
+
   if (nas > 0) {
     stop("NA observations")
   }
-
+  
   # Check for balanced panel
   bal <- aggregate(time ~ id,  data = data, FUN = length)
   balanced <- ifelse(all(bal$time == bal$time[1]), 1, 0)
@@ -122,6 +131,7 @@ bacon <- function(formula,
       formula,
       paste0("treated ~ . + factor(time) + factor(id) -", treated_var)
     )
+  
     data <- run_fwl(data, control_formula)
 
     # Calculate within treatment group estimate and its weight
