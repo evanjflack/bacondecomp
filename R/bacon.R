@@ -14,6 +14,8 @@
 #' @param data a data.frame containing the variables in the model.
 #' @param id_var character, the name of id variable for units.
 #' @param time_var character, the name of time variable.
+#' @param quietly logical, default = FALSE, if set to TRUE then bacon() does not
+#'  print the summary of estimates/weights by type (e.g. Treated vs Untreated)
 #'
 #' @return If control variables are included in the formula, then an object of
 #'  class "list" with three elements:
@@ -53,7 +55,8 @@
 bacon <- function(formula,
                   data,
                   id_var,
-                  time_var) {
+                  time_var, 
+                  quietly = F) {
 
   # Evaluate formula in data environment
   formula <- formula(terms(formula, data = data))
@@ -105,6 +108,11 @@ bacon <- function(formula,
     
     # Rescale weights to sum to 1
     two_by_twos <- scale_weights(two_by_twos)
+    
+    if (quietly == F) {
+      print_summary(two_by_twos)
+    }
+    
     return(two_by_twos)
     
   } else if (length(control_vars) > 0) {
@@ -717,4 +725,12 @@ calc_controlled_beta_weights <- function(data, g_control_formula) {
 
   r_list <- list(s_kl = s_kl, beta_hat_d_bkl = beta_hat_d_bkl)
   return(r_list)
+}
+
+print_summary <- function(two_by_twos) {
+  sum_df <- aggregate(estimate ~ type, data = two_by_twos, FUN = mean)
+  sum_df <- merge(sum_df, aggregate(weight ~ type, data = two_by_twos, 
+                                    FUN = sum), by = "type")
+  colnames(sum_df) <- c("type", "avg_est", "weight")
+  print(sum_df)
 }
