@@ -57,9 +57,10 @@ bacon <- function(formula,
                   id_var,
                   time_var, 
                   quietly = F) {
-
+  
   # Evaluate formula in data environment
-  formula <- formula(terms(formula, data = data))
+  formula <- formula(terms
+                     (formula, data = data))
   
   # Unpack variable names and rename variables
   vars <- unpack_variable_names(formula)
@@ -73,11 +74,12 @@ bacon <- function(formula,
   if (length(control_vars > 0)) {
     control_formula <- update(
       formula,
-      paste0("treated ~ . -", treated_var)
+      paste0("treated ~ . - 1 - ", treated_var)
     )
-    nas <- nas + sum(is.na(model.matrix(control_formula, data = data)))
+    mm_control <- model.matrix(control_formula, data = data)
+    nas_control <- 1 - (nrow(mm_control) == nrow(data))
+    nas <- nas + nas_control
   }
-
   if (nas > 0) {
     stop("NA observations")
   }
