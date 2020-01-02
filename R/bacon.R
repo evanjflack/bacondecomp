@@ -150,6 +150,11 @@ bacon <- function(formula,
 
     # Rescale weights to sum to 1
     two_by_twos <- scale_weights(two_by_twos)
+    
+    if (quietly == F) {
+      print_summary(two_by_twos)
+    }
+    
     r_list <- list("beta_hat_w" = beta_hat_w,
                    "Omega" = Omega,
                    "two_by_twos" = two_by_twos)
@@ -732,5 +737,8 @@ print_summary <- function(two_by_twos) {
   sum_df <- merge(sum_df, aggregate(weight ~ type, data = two_by_twos, 
                                     FUN = sum), by = "type")
   colnames(sum_df) <- c("type", "avg_est", "weight")
+  sum_df$avg_est <- round(sum_df$avg_est, 5)
+  sum_df$weight <- round(sum_df$weight, 5)
+
   print(sum_df)
 }
