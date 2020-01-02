@@ -102,13 +102,11 @@ bacon <- function(formula,
       two_by_twos[i, "estimate"] <- estimate
       two_by_twos[i, "weight"] <- weight
     }
-
+    
     # Rescale weights to sum to 1
     two_by_twos <- scale_weights(two_by_twos)
-    # Classify estimate types (e.g. treated vs not treated)
-    two_by_twos <- classify_type(two_by_twos)
     return(two_by_twos)
-
+    
   } else if (length(control_vars) > 0) {
     # Controled ----------------------------------------------------------------
     # Predict Treatment and calulate demeaned residuals
@@ -247,6 +245,17 @@ create_treatment_groups <- function(data, control_vars,
     # Remove first period
     two_by_twos <- two_by_twos[!(two_by_twos$treated == min(data$time)), ]
     two_by_twos[, c("estimate", "weight")] <- NA
+    # Classify estimate "type"
+    two_by_twos[, "type"] <- ifelse(two_by_twos$untreated == 99999,
+                                    "Treated vs Untreated",
+                                    ifelse(two_by_twos$untreated == 
+                                             min(data$time), 
+                                           "Later vs Always Treated", 
+                                           ifelse(two_by_twos$treated >
+                                                    two_by_twos$untreated,
+                                                  "Later vs Earlier Treated",
+                                                  "Earlier vs Later Treated")))
+    
   } else if (length(control_vars) > 0) {
     # In the controlled decomposition, each dyad only appears once becasue we
     # do not make the distinction between earlier vs later treated
@@ -260,6 +269,14 @@ create_treatment_groups <- function(data, control_vars,
         }
       }
     }
+    two_by_twos[, "type"] <- ifelse(two_by_twos$untreated == 99999,
+                                    "Treated vs Untreated",
+                                    ifelse(two_by_twos$treated == 
+                                             min(data$time) | 
+                                             two_by_twos$untreated == 
+                                             min(data$time), 
+                                           "Later vs Always Treated", 
+                                           "Both Treated"))
   }
 
   # Whether or not to return the merged data too.
@@ -361,25 +378,6 @@ calculate_weights <- function(data,
 scale_weights <- function(two_by_twos) {
   sum_weight <- sum(two_by_twos$weight)
   two_by_twos$weight <- two_by_twos$weight / sum_weight
-  return(two_by_twos)
-}
-
-#' Classify Estimate Type
-#'
-#' Classify the type of 2x2 estimate
-#'
-#' @param two_by_twos data.frame of 2x2 estimates and weights
-#'
-#' @return updated two_by_twos data.frame with etaimate type variable
-#'
-#' @noRd
-classify_type <- function(two_by_twos) {
-  two_by_twos[, "type"] <- ifelse(two_by_twos$untreated == 99999,
-                                  "Treated vs Untreated",
-                                  ifelse(two_by_twos$treated >
-                                           two_by_twos$untreated,
-                                         "Later vs Earlier Treated",
-                                         "Earlier vs Later Treated"))
   return(two_by_twos)
 }
 
