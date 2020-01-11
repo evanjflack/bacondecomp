@@ -89,7 +89,7 @@ And again we can plot the decomposed between estimates, $\hat{\beta}^d_{b, k, l}
 
 ```{r plot2, fig.width = 6, fig.height = 4, fig.align = 'center'}
 ggplot(ret_bacon$two_by_twos) +
-  aes(x = weight, y = estimate) +
+  aes(x = weight, y = estimate, shape = factor(type)) +
   labs(x = "Weight", y = "Estimate") +
   geom_point()
 ```
