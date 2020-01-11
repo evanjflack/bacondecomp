@@ -2,15 +2,14 @@
 #'
 #' bacon() is a function that performs the Goodman-Bacon decomposition for
 #'  differences-in-differences with variation in treatment timing (with or
-#'  without time-varying control variables).
+#'  without time-varying covariates).
 #'
-#' @param formula an object of class "\link[stats]{formula}": a symbolic
+#' @param formula an object of class "formula": a symbolic
 #'  representation of the model to be fitted. Must be  of the form y ~ D + controls,
 #'  where y is the outcome variable,  D is the binary
 #'  treatment indicator, and `controls` can be any additional control variables. Do not
-#'  include the fixed effects in the formula.
-#'
-#'  If using `.` notation must be of the form y ~ D + . - FE1 - FE2
+#'  include the fixed effects in the formula. If using `.` notation must be of 
+#'  the form y ~ D + . - FE1 - FE2
 #' @param data a data.frame containing the variables in the model.
 #' @param id_var character, the name of id variable for units.
 #' @param time_var character, the name of time variable.
@@ -25,8 +24,8 @@
 #'  \item{two_by_twos}{a data.frame with the covariate adjusted 2x2 estimates
 #'   and weights}
 #'
-#' If not control variables are included then only a data.frame with the 2x2
-#'  estimates and weights is returned.
+#' If not control variables are included then only the two_by_twos data.frame
+#'  is returned. 
 #'
 #' @examples
 #' # Castle Doctrine (Uncontrolled)
@@ -34,20 +33,12 @@
 #'                   data = bacondecomp::castle,
 #'                   id_var = "state",
 #'                   time_var = "year")
-#' \donttest{
-#' library(ggplot2)
-#' ggplot(df_bacon) +
-#'   aes(x = weight, y = estimate, shape = factor(type)) +
-#'   labs(x = "Weight", y = "Estimate", shape = "Type") +
-#'   geom_point()
 #'
-#'   }
 #' # Castle Doctrine (Controlled)
 #' ret_bacon <- bacon(l_homicide ~ post + l_pop + l_income,
 #'                    data = bacondecomp::castle,
 #'                    id_var = "state",
 #'                    time_var = "year")
-#' df_bacon <- ret_bacon$two_by_twos
 #'
 #' @import stats
 #'
@@ -69,6 +60,13 @@ bacon <- function(formula,
   control_vars <- vars$control_vars
   data <- rename_vars(data, id_var, time_var, outcome_var, treated_var)
   
+  # Check for a balanced panel
+  bal <- aggregate(time ~ id,  data = data, FUN = length)
+  balanced <- ifelse(all(bal$time == bal$time[1]), 1, 0)
+  if (!balanced) {
+    stop("Unbalanced Panel")
+  }
+  
   # Check for NA observations
   nas <- sum(is.na(data[, c("id", "time", "outcome", "treated")]))
   if (length(control_vars > 0)) {
@@ -82,13 +80,6 @@ bacon <- function(formula,
   }
   if (nas > 0) {
     stop("NA observations")
-  }
-  
-  # Check for balanced panel
-  bal <- aggregate(time ~ id,  data = data, FUN = length)
-  balanced <- ifelse(all(bal$time == bal$time[1]), 1, 0)
-  if (!balanced) {
-    stop("Unbalanced Panel")
   }
 
   # Create 2x2 grid of treatment groups
