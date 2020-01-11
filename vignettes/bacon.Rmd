@@ -25,7 +25,7 @@ The following example comes from Cheng and Hoekstra (2013, JHR). The authors est
 * `l_homicide` log of the homicide rate
 * `post` indicator for whether a castle doctrine law was in effect
 
-Here, we perform the decomposition without time-varying controls, and make sure that the weighted average of the decomposition equals the two-way fixed effects estimate.
+First, we perform the decomposition without time-varying controls, and make sure that the weighted average of the decomposition equals the two-way fixed effects estimate.
 
 ```{r castle, fig.width = 7}
 library(bacondecomp)
@@ -56,7 +56,15 @@ ggplot(df_bacon) +
 
 In this example, one estimate has almost 60 percent of the weight: states treated in 2006 vs states that are never treated.
 
-We can also perform the decomposition including time varying controls. In this example we use population and income (both in logs). 
+We can also perform the decomposition with time varying controls. In this example we add the log of state/year level population (l_pop) and income (l_income). A couple things to note: 
+
+\item{}{When including controls there is an additional source of idnetifying variation that comes from within treatent timing group. It is noted as $\hat{\beta^p_w}$}. $\Omega$ is the weight given to this estimate in the two-way fixed effects estimate. 
+\item{}{The 2x2s are no longer decomposed into "early vs late" and "late vs early" estimates. For each treatment group dyad, there is only one estimate, $\hat{\beta}^d_{b, k, l}$ which gets weight $s_{k, l}.
+
+The two way fixed effects estimate, $\hat{\beta}^{DD|X}$, then decomposes to: 
+
+$\hat{\beta}^{DD|X} = \Omega \hat{\beta^p_w} + (1 - \Omega) \sum_{k} \sum_{l > k} s_{k, l} \hat{\beta}^d_{b, k, l}$
+
 
 ```{r cont}
 ret_bacon <- bacon(l_homicide ~ post + l_pop + l_income, 
@@ -77,11 +85,10 @@ two_way_fe_coef_cont <- two_way_fe_cont$coefficients["post"]
 print(paste("Two way FE estimate =", round(two_way_fe_coef_cont, 4)))
 ```
 
-We can also plot the decomposed between estimates and their weights.
+And again we can plot the decomposed between estimates, $\hat{\beta}^d_{b, k, l}$ and their weights, $s_{k, l}$.
 
 ```{r plot2, fig.width = 6, fig.height = 4, fig.align = 'center'}
-df_bacon <- ret_bacon$two_by_twos
-ggplot(df_bacon) +
+ggplot(ret_bacon$two_by_twos) +
   aes(x = weight, y = estimate) +
   labs(x = "Weight", y = "Estimate") +
   geom_point()
