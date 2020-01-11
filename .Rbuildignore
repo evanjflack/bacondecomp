@@ -9,3 +9,4 @@
 ^runtime.txt$
 ^index.ipynb$
 ^cran-comments.md$
+^.rstudio$
