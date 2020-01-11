@@ -2,18 +2,19 @@
 #'
 #' bacon() is a function that performs the Goodman-Bacon decomposition for
 #'  differences-in-differences with variation in treatment timing (with or
-#'  without time-varying control variables).
+#'  without time-varying covariates).
 #'
-#' @param formula an object of class "\link[stats]{formula}": a symbolic
+#' @param formula an object of class "formula": a symbolic
 #'  representation of the model to be fitted. Must be  of the form y ~ D + controls,
 #'  where y is the outcome variable,  D is the binary
 #'  treatment indicator, and `controls` can be any additional control variables. Do not
-#'  include the fixed effects in the formula.
-#'
-#'  If using `.` notation must be of the form y ~ D + . - FE1 - FE2
+#'  include the fixed effects in the formula. If using `.` notation must be of 
+#'  the form y ~ D + . - FE1 - FE2
 #' @param data a data.frame containing the variables in the model.
 #' @param id_var character, the name of id variable for units.
 #' @param time_var character, the name of time variable.
+#' @param quietly logical, default = FALSE, if set to TRUE then bacon() does not
+#'  print the summary of estimates/weights by type (e.g. Treated vs Untreated)
 #'
 #' @return If control variables are included in the formula, then an object of
 #'  class "list" with three elements:
@@ -23,8 +24,8 @@
 #'  \item{two_by_twos}{a data.frame with the covariate adjusted 2x2 estimates
 #'   and weights}
 #'
-#' If not control variables are included then only a data.frame with the 2x2
-#'  estimates and weights is returned.
+#' If not control variables are included then only the two_by_twos data.frame
+#'  is returned. 
 #'
 #' @examples
 #' # Castle Doctrine (Uncontrolled)
@@ -32,20 +33,12 @@
 #'                   data = bacondecomp::castle,
 #'                   id_var = "state",
 #'                   time_var = "year")
-#' \donttest{
-#' library(ggplot2)
-#' ggplot(df_bacon) +
-#'   aes(x = weight, y = estimate, shape = factor(type)) +
-#'   labs(x = "Weight", y = "Estimate", shape = "Type") +
-#'   geom_point()
 #'
-#'   }
 #' # Castle Doctrine (Controlled)
 #' ret_bacon <- bacon(l_homicide ~ post + l_pop + l_income,
 #'                    data = bacondecomp::castle,
 #'                    id_var = "state",
 #'                    time_var = "year")
-#' df_bacon <- ret_bacon$two_by_twos
 #'
 #' @import stats
 #'
@@ -53,28 +46,40 @@
 bacon <- function(formula,
                   data,
                   id_var,
-                  time_var) {
-
+                  time_var, 
+                  quietly = F) {
+  
   # Evaluate formula in data environment
-  formula <- formula(terms(formula, data = data))
+  formula <- formula(terms
+                     (formula, data = data))
+  
   # Unpack variable names and rename variables
   vars <- unpack_variable_names(formula)
   outcome_var <- vars$outcome_var
   treated_var <- vars$treated_var
   control_vars <- vars$control_vars
   data <- rename_vars(data, id_var, time_var, outcome_var, treated_var)
-
-  # Check for NA observations
-  nas <- sum(is.na(data[, c("id", "time", "outcome", "treated")]))
-  if (nas > 0) {
-    stop("NA observations")
-  }
-
-  # Check for balanced panel
+  
+  # Check for a balanced panel
   bal <- aggregate(time ~ id,  data = data, FUN = length)
   balanced <- ifelse(all(bal$time == bal$time[1]), 1, 0)
   if (!balanced) {
     stop("Unbalanced Panel")
+  }
+  
+  # Check for NA observations
+  nas <- sum(is.na(data[, c("id", "time", "outcome", "treated")]))
+  if (length(control_vars > 0)) {
+    control_formula <- update(
+      formula,
+      paste0("treated ~ . - 1 - ", treated_var)
+    )
+    mm_control <- model.matrix(control_formula, data = data)
+    nas_control <- 1 - (nrow(mm_control) == nrow(data))
+    nas <- nas + nas_control
+  }
+  if (nas > 0) {
+    stop("NA observations")
   }
 
   # Create 2x2 grid of treatment groups
@@ -102,13 +107,16 @@ bacon <- function(formula,
       two_by_twos[i, "estimate"] <- estimate
       two_by_twos[i, "weight"] <- weight
     }
-
+    
     # Rescale weights to sum to 1
     two_by_twos <- scale_weights(two_by_twos)
-    # Classify estimate types (e.g. treated vs not treated)
-    two_by_twos <- classify_type(two_by_twos)
+    
+    if (quietly == F) {
+      print_summary(two_by_twos)
+    }
+    
     return(two_by_twos)
-
+    
   } else if (length(control_vars) > 0) {
     # Controled ----------------------------------------------------------------
     # Predict Treatment and calulate demeaned residuals
@@ -116,6 +124,7 @@ bacon <- function(formula,
       formula,
       paste0("treated ~ . + factor(time) + factor(id) -", treated_var)
     )
+  
     data <- run_fwl(data, control_formula)
 
     # Calculate within treatment group estimate and its weight
@@ -144,6 +153,11 @@ bacon <- function(formula,
 
     # Rescale weights to sum to 1
     two_by_twos <- scale_weights(two_by_twos)
+    
+    if (quietly == F) {
+      print_summary(two_by_twos)
+    }
+    
     r_list <- list("beta_hat_w" = beta_hat_w,
                    "Omega" = Omega,
                    "two_by_twos" = two_by_twos)
@@ -247,6 +261,17 @@ create_treatment_groups <- function(data, control_vars,
     # Remove first period
     two_by_twos <- two_by_twos[!(two_by_twos$treated == min(data$time)), ]
     two_by_twos[, c("estimate", "weight")] <- NA
+    # Classify estimate "type"
+    two_by_twos[, "type"] <- ifelse(two_by_twos$untreated == 99999,
+                                    "Treated vs Untreated",
+                                    ifelse(two_by_twos$untreated == 
+                                             min(data$time), 
+                                           "Later vs Always Treated", 
+                                           ifelse(two_by_twos$treated >
+                                                    two_by_twos$untreated,
+                                                  "Later vs Earlier Treated",
+                                                  "Earlier vs Later Treated")))
+    
   } else if (length(control_vars) > 0) {
     # In the controlled decomposition, each dyad only appears once becasue we
     # do not make the distinction between earlier vs later treated
@@ -260,6 +285,14 @@ create_treatment_groups <- function(data, control_vars,
         }
       }
     }
+    two_by_twos[, "type"] <- ifelse(two_by_twos$untreated == 99999,
+                                    "Treated vs Untreated",
+                                    ifelse(two_by_twos$treated == 
+                                             min(data$time) | 
+                                             two_by_twos$untreated == 
+                                             min(data$time), 
+                                           "Later vs Always Treated", 
+                                           "Both Treated"))
   }
 
   # Whether or not to return the merged data too.
@@ -361,25 +394,6 @@ calculate_weights <- function(data,
 scale_weights <- function(two_by_twos) {
   sum_weight <- sum(two_by_twos$weight)
   two_by_twos$weight <- two_by_twos$weight / sum_weight
-  return(two_by_twos)
-}
-
-#' Classify Estimate Type
-#'
-#' Classify the type of 2x2 estimate
-#'
-#' @param two_by_twos data.frame of 2x2 estimates and weights
-#'
-#' @return updated two_by_twos data.frame with etaimate type variable
-#'
-#' @noRd
-classify_type <- function(two_by_twos) {
-  two_by_twos[, "type"] <- ifelse(two_by_twos$untreated == 99999,
-                                  "Treated vs Untreated",
-                                  ifelse(two_by_twos$treated >
-                                           two_by_twos$untreated,
-                                         "Later vs Earlier Treated",
-                                         "Earlier vs Later Treated"))
   return(two_by_twos)
 }
 
@@ -719,4 +733,15 @@ calc_controlled_beta_weights <- function(data, g_control_formula) {
 
   r_list <- list(s_kl = s_kl, beta_hat_d_bkl = beta_hat_d_bkl)
   return(r_list)
+}
+
+print_summary <- function(two_by_twos) {
+  sum_df <- aggregate(estimate ~ type, data = two_by_twos, FUN = mean)
+  sum_df <- merge(sum_df, aggregate(weight ~ type, data = two_by_twos, 
+                                    FUN = sum), by = "type")
+  colnames(sum_df) <- c("type", "avg_est", "weight")
+  sum_df$avg_est <- round(sum_df$avg_est, 5)
+  sum_df$weight <- round(sum_df$weight, 5)
+
+  print(sum_df)
 }
