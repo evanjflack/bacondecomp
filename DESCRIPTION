@@ -8,9 +8,8 @@ Authors@R: c(
   person("Edward", "Jee", role = c("aut"))
   )
 Maintainer: Evan Flack <evanjflack@gmail.com>
-Description: Goodman-Bacon decomposition for differences-in-differences with 
-    variation in treatment timing.
-    Goodman-Bacon(2018) <doi:10.3386/w25018>
+Description: Decomposition for differences-in-differences with variation in 
+    treatment timing from Goodman-Bacon (2018) <doi:10.3386/w25018>.
 License: MIT + file LICENSE
 Depends: R (>= 2.10)
 Suggests:
