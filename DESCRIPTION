@@ -3,11 +3,13 @@ Type: Package
 Title: Goodman-Bacon Decomposition
 Version: 0.1.0
 Authors@R: c(
-  person("Evan", "Flack", email = "evanjflack@gmail.com", role = c("aut", "cre")),
+  person("Evan", "Flack", email = "evanjflack@gmail.com", 
+         role = c("aut", "cre")),
   person("Edward", "Jee", role = c("aut"))
   )
 Maintainer: Evan Flack <evanjflack@gmail.com>
-Description: Goodman-Bacon decomposition for differences-in-differences with variation in treatment timing.
+Description: Decomposition for differences-in-differences with variation in 
+    treatment timing from Goodman-Bacon (2018) <doi:10.3386/w25018>.
 License: MIT + file LICENSE
 Depends: R (>= 2.10)
 Suggests:

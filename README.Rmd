@@ -2,10 +2,10 @@
 output: github_document
 ---
 
-![](https://github.com/evanjflack/bacon/workflows/R-CMD-check/badge.svg)
+![](https://github.com/evanjflack/bacondecomp/workflows/R-CMD-check/badge.svg)
 [![Build Status](https://travis-ci.com/evanjflack/bacondecomp.svg?branch=master)](https://travis-ci.com/evanjflack/bacondecomp)
-[![Coverage status](https://codecov.io/gh/evanjflack/bacon/branch/master/graph/badge.svg)](https://codecov.io/github/evanjflack/bacon?branch=master)
-[![Example Jupyter Notebook](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/evanjflack/bacon/master?filepath=index.ipynb)
+[![Coverage status](https://codecov.io/gh/evanjflack/bacondecomp/branch/master/graph/badge.svg)](https://codecov.io/github/evanjflack/bacondecomp?branch=master)
+[![Example Jupyter Notebook](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/evanjflack/bacondecomp/master?filepath=index.ipynb)
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
