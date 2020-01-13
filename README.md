@@ -1,11 +1,11 @@
 
-![](https://github.com/evanjflack/bacon/workflows/R-CMD-check/badge.svg)
+![](https://github.com/evanjflack/bacondecomp/workflows/R-CMD-check/badge.svg)
 [![Build
 Status](https://travis-ci.com/evanjflack/bacondecomp.svg?branch=master)](https://travis-ci.com/evanjflack/bacondecomp)
 [![Coverage
-status](https://codecov.io/gh/evanjflack/bacon/branch/master/graph/badge.svg)](https://codecov.io/github/evanjflack/bacon?branch=master)
+status](https://codecov.io/gh/evanjflack/bacondecomp/branch/master/graph/badge.svg)](https://codecov.io/github/evanjflack/bacondecomp?branch=master)
 [![Example Jupyter
-Notebook](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/evanjflack/bacon/master?filepath=index.ipynb)
+Notebook](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/evanjflack/bacondecomp/master?filepath=index.ipynb)
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
@@ -48,6 +48,10 @@ df_bacon <- bacon(incearn_ln ~ reform_math,
                   data = bacondecomp::math_reform,
                   id_var = "state",
                   time_var = "class")
+#>                       type avg_est  weight
+#> 1 Earlier vs Later Treated 0.07117 0.06353
+#> 2 Later vs Earlier Treated 0.04117 0.05265
+#> 3     Treated vs Untreated 0.01211 0.88382
 
 library(ggplot2)
 
