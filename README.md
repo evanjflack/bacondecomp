@@ -1,4 +1,5 @@
 
+[![](https://www.r-pkg.org/badges/version/bacondecomp?color=green)](https://cran.r-project.org/package=bacondecomp)
 ![](https://github.com/evanjflack/bacondecomp/workflows/R-CMD-check/badge.svg)
 [![Build
 Status](https://travis-ci.com/evanjflack/bacondecomp.svg?branch=master)](https://travis-ci.com/evanjflack/bacondecomp)
