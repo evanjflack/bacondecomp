@@ -734,15 +734,16 @@ calc_controlled_beta_weights <- function(data, g_control_formula) {
   return(r_list)
 }
 
-print_summary <- function(two_by_twos) {
+print_summary <- function(two_by_twos, return_df = FALSE) {
   sum_df <- aggregate(weight ~ type,
                       data = two_by_twos,
                       FUN = sum)
   sum_df$avg_est <- c(by(two_by_twos, two_by_twos$type,
                          function(x) round(weighted.mean(x$estimate, x$weight), 5)))
   sum_df$weight <- round(sum_df$weight, 5)
-  
-  
-
   print(sum_df)
+  
+  if (return_df == TRUE) {
+    return(sum_df)
+  }
 }
