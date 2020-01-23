@@ -48,7 +48,6 @@ bacon <- function(formula,
                   id_var,
                   time_var, 
                   quietly = F) {
-  
   # Evaluate formula in data environment
   formula <- formula(terms
                      (formula, data = data))
@@ -736,12 +735,14 @@ calc_controlled_beta_weights <- function(data, g_control_formula) {
 }
 
 print_summary <- function(two_by_twos) {
-  sum_df <- aggregate(estimate ~ type, data = two_by_twos, FUN = mean)
-  sum_df <- merge(sum_df, aggregate(weight ~ type, data = two_by_twos, 
-                                    FUN = sum), by = "type")
-  colnames(sum_df) <- c("type", "avg_est", "weight")
-  sum_df$avg_est <- round(sum_df$avg_est, 5)
+  sum_df <- aggregate(weight ~ type,
+                      data = two_by_twos,
+                      FUN = sum)
+  sum_df$avg_est <- c(by(two_by_twos, two_by_twos$type,
+                         function(x) round(weighted.mean(x$estimate, x$weight), 5)))
   sum_df$weight <- round(sum_df$weight, 5)
+  
+  
 
   print(sum_df)
 }
