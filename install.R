@@ -1,1 +1,5 @@
-install.packages("ggplot2")
+install.packages("ggplot2",repos = 'http://cran.us.r-project.org')
+install.packages("knitr", repos = 'http://cran.us.r-project.org')
+install.packages("testthat", repos = 'http://cran.us.r-project.org')
+install.packages("rmarkdown", repos = 'http://cran.us.r-project.org')
+install.packages("covr", repos = 'http://cran.us.r-project.org')
