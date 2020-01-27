@@ -1,5 +1,6 @@
+# Ignore everything
 **
 
-!install.R
+# Allow files and directories
 !Dockerfile
-!.dockerignore
+!install.R
