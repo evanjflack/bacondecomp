@@ -4,12 +4,6 @@
 castle <- bacondecomp::castle
 castle <- castle[-sample(1:nrow(castle), 1), ]
 
-test_that("Unbalanced panel error", {
-  expect_error(bacon(l_homicide ~ post,
-                     data = castle,
-                     id_var = "state",
-                     time_var = "year"), "Unbalanced Panel")
-})
 
 # NA Observations (Uncontrolled)
 castle <- bacondecomp::castle
