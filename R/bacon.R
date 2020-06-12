@@ -59,13 +59,6 @@ bacon <- function(formula,
   control_vars <- vars$control_vars
   data <- rename_vars(data, id_var, time_var, outcome_var, treated_var)
   
-  # Check for a balanced panel
-  bal <- aggregate(time ~ id,  data = data, FUN = length)
-  balanced <- ifelse(all(bal$time == bal$time[1]), 1, 0)
-  if (!balanced) {
-    stop("Unbalanced Panel")
-  }
-  
   # Check for NA observations
   nas <- sum(is.na(data[, c("id", "time", "outcome", "treated")]))
   if (length(control_vars > 0)) {
