@@ -4,14 +4,16 @@
 \name{math_reform}
 \alias{math_reform}
 \title{Aggregated data from Goodman (In Press)}
-\format{A data.frame with 520 observations and 5 variables
+\format{
+A data.frame with 520 observations and 5 variables
 \describe{
   \item{state}{The state (unit of analysis).}
   \item{class}{The high school class (time).}
   \item{reform_math}{Indicator for whether the reform was in place for the state/class.}
   \item{reformyr_math}{The year the math reform was first implemented for the state. Set to NA if never implemented.}
   \item{incearn_ln}{Natural log of future income.}
-}}
+}
+}
 \usage{
 math_reform
 }

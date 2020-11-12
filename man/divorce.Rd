@@ -4,7 +4,9 @@
 \name{divorce}
 \alias{divorce}
 \title{Data from Stevenson and Wolfers (2006, QJE)}
-\format{A data.frame with 3366 observations and 147 variables}
+\format{
+A data.frame with 3366 observations and 147 variables
+}
 \usage{
 divorce
 }
