@@ -28,3 +28,5 @@ test_that("Table 1 col 1 Stevenson and Wolfers  Replicates",
               stevenson_wolfson_replicates
             )
           })
+
+## TODO We don't actually test anything related to bacon here...

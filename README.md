@@ -19,6 +19,7 @@ covariates.
 
 ## Installation
 
+
 You can install `bacondecomp 0.1.2` from CRAN:
 
 ``` r
