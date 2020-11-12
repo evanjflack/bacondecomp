@@ -19,7 +19,8 @@ covariates.
 
 ## Installation
 
-You can install `bacondecomp 0.1.1` from CRAN:
+
+You can install `bacondecomp 0.1.2` from CRAN:
 
 ``` r
 install.packages("bacondecomp")
@@ -55,10 +56,10 @@ df_bacon <- bacon(incearn_ln ~ reform_math,
                   data = bacondecomp::math_reform,
                   id_var = "state",
                   time_var = "class")
-#>                       type avg_est  weight
-#> 1 Earlier vs Later Treated 0.07117 0.06353
-#> 2 Later vs Earlier Treated 0.04117 0.05265
-#> 3     Treated vs Untreated 0.01211 0.88382
+#>                       type  weight  avg_est
+#> 1 Earlier vs Later Treated 0.06353  0.02868
+#> 2 Later vs Earlier Treated 0.05265  0.03375
+#> 3     Treated vs Untreated 0.88382 -0.00129
 
 library(ggplot2)
 

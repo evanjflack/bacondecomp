@@ -4,13 +4,15 @@
 \name{castle}
 \alias{castle}
 \title{Data from Cheng and Hoekstra (2013, JHR)}
-\format{A data.frame with 520 observations and 159 variables
+\format{
+A data.frame with 520 observations and 159 variables
 \describe{
   \item{st}{The state (unit of analysis).}
   \item{year}{Calendar year (time).}
   \item{l_homicide}{Log of state/year homicide rate}
   \item{post}{Indicator whether castle reform has been implemented}
-}}
+}
+}
 \usage{
 castle
 }

@@ -4,7 +4,6 @@
 castle <- bacondecomp::castle
 castle <- castle[-sample(1:nrow(castle), 1), ]
 
-
 # NA Observations (Uncontrolled)
 castle <- bacondecomp::castle
 castle[sample(1:nrow(castle), 1), "post"] <- NA
