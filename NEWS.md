@@ -1,3 +1,6 @@
+# bacondecomp 0.1.3
+This version uses fixest to greatly increase the speed.
+
 # bacondecomp 0.1.2
 This version removes an unnecessary balanced panel check/error.
 

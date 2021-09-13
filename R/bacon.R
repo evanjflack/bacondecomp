@@ -44,10 +44,10 @@
 #'
 #' @export
 bacon <- function(formula,
-                  data,
-                  id_var,
-                  time_var, 
-                  quietly = F) {
+                       data,
+                       id_var,
+                       time_var, 
+                       quietly = T) {
   # Evaluate formula in data environment
   formula <- formula(terms
                      (formula, data = data))
@@ -73,29 +73,32 @@ bacon <- function(formula,
   if (nas > 0) {
     stop("NA observations")
   }
-
+  
   # Create 2x2 grid of treatment groups
   treatment_group_calc <- create_treatment_groups(data, control_vars,
                                                   return_merged_df = TRUE)
+  
   two_by_twos <- treatment_group_calc$two_by_twos
   data <- treatment_group_calc$data
-
+  
   # Uncontrolled ---------------------------------------------------------------
   if (length(control_vars) == 0) {
     # Iterate through treatment group dyads
     for (i in 1:nrow(two_by_twos)) {
       treated_group <- two_by_twos[i, "treated"]
       untreated_group <- two_by_twos[i, "untreated"]
-
+      
       data1 <- subset_data(data, treated_group, untreated_group)
-
+      
       # Calculate estimate and weight
       weight <- calculate_weights(data = data1,
                                   treated_group = treated_group,
                                   untreated_group = untreated_group)
-      estimate <- lm(outcome ~ treated + factor(time) + factor(id),
-                     data = data1)$coefficients[2]
-
+      
+      # Fixest much faster
+      estimate <- fixest::feols(outcome ~ treated | time + id, 
+                                data = data1)$coefficients[1]
+      
       two_by_twos[i, "estimate"] <- estimate
       two_by_twos[i, "weight"] <- weight
     }
@@ -109,40 +112,39 @@ bacon <- function(formula,
     
     return(two_by_twos)
     
+    # Controls -------------------------------------------------------------------
   } else if (length(control_vars) > 0) {
-    # Controled ----------------------------------------------------------------
     # Predict Treatment and calulate demeaned residuals
-    control_formula <- update(
-      formula,
-      paste0("treated ~ . + factor(time) + factor(id) -", treated_var)
+    control_formula <- as.formula(
+      paste0("treated ~ ", paste(control_vars, collapse = " + "), "| time + id")
     )
-  
+    
     data <- run_fwl(data, control_formula)
-
+    
     # Calculate within treatment group estimate and its weight
     Omega <- calculate_Omega(data)
     beta_hat_w <- calculate_beta_hat_w(data)
-
+    
     # Collapse controls and predicted treatment to treatment group/year level
     r_collapse_x_p <- collapse_x_p(data, control_formula)
     data <- r_collapse_x_p$data
     g_control_formula <- r_collapse_x_p$g_control_formula
-
+    
     # Iterate through treatment group dyads
     for (i in 1:nrow(two_by_twos)) {
       treated_group <- two_by_twos[i, "treated"]
       untreated_group <- two_by_twos[i, "untreated"]
       data1 <- data[data$treat_time %in% c(treated_group, untreated_group), ]
-
+      
       # Calculate between group estimate and weight
       weight_est <- calc_controlled_beta_weights(data1, g_control_formula)
       s_kl <- weight_est$s_kl
       beta_hat_d_bkl <- weight_est$beta_hat_d_bkl
-
+      
       two_by_twos[i, "weight"] <- s_kl
       two_by_twos[i, "estimate"] <- beta_hat_d_bkl
     }
-
+    
     # Rescale weights to sum to 1
     two_by_twos <- scale_weights(two_by_twos)
     
@@ -230,17 +232,17 @@ create_treatment_groups <- function(data, control_vars,
   colnames(df_treat) <- c("id", "treat_time")
   data <- merge(data, df_treat, by = "id", all.x = T)
   data[is.na(data$treat_time), "treat_time"] <- 99999
-
+  
   # Check for weakly increasing treatment
   inc <- ifelse(data$treat_time == 99999, 1,
                 ifelse(data$time >= data$treat_time & data$treated == 1, 1,
                        ifelse(data$time < data$treat_time & data$treated == 0,
                               1, 0)))
-
+  
   if (!all(as.logical(inc))) {
     stop("Treatment not weakly increasing with time")
   }
-
+  
   if (length(control_vars) == 0) {
     # Create data.frame of all posible 2x2 estimates. Dyads may appear twice as
     # treatment groups can play the roll of both earlier and later treated
@@ -248,7 +250,7 @@ create_treatment_groups <- function(data, control_vars,
                                unique(data$treat_time))
     colnames(two_by_twos) <- c("treated", "untreated")
     two_by_twos <- two_by_twos[!(two_by_twos$treated ==
-                                 two_by_twos$untreated), ]
+                                   two_by_twos$untreated), ]
     two_by_twos <- two_by_twos[!(two_by_twos$treated == 99999), ]
     # Remove first period
     two_by_twos <- two_by_twos[!(two_by_twos$treated == min(data$time)), ]
@@ -286,7 +288,7 @@ create_treatment_groups <- function(data, control_vars,
                                            "Later vs Always Treated", 
                                            "Both Treated"))
   }
-
+  
   # Whether or not to return the merged data too.
   if (return_merged_df == TRUE) {
     return_data <- list("two_by_twos" = two_by_twos,
@@ -402,22 +404,22 @@ scale_weights <- function(two_by_twos) {
 #'
 #' @noRd
 run_fwl <- function(data, control_formula) {
-  fit_fwl <- lm(control_formula, data = data)
+  fit_fwl <- fixest::feols(control_formula, data = data)
   data$p <- predict(fit_fwl)
   data$d <- fit_fwl$residuals
   data$d_it <- data$d
-
+  
   # demean residulas
   data$d_i_bar <- ave(data$d, data$id)
   data$d_t_bar <- ave(data$d_it, data$time)
   data$d_bar_bar <- mean(data$d_it)
   data$d_it_til <- data$d_it - data$d_i_bar - data$d_t_bar + data$d_bar_bar
-
+  
   data$d_kt_bar <- ave(data$d_it, data$treat_time, data$time)
   data$d_k_bar <- ave(data$d_it, data$treat_time)
   data$d_ikt_til <- data$d_it - data$d_i_bar - (data$d_kt_bar - data$d_k_bar)
   data$d_kt_til <- (data$d_kt_bar - data$d_k_bar) -
-                   (data$d_t_bar - data$d_bar_bar)
+    (data$d_t_bar - data$d_bar_bar)
   return(data)
 }
 
@@ -512,23 +514,23 @@ collapse_x_p <- function(data, control_formula) {
   # Group level Xs
   f1 <- update(control_formula, . ~ . - factor(time) - factor(id) - 1)
   control_data <- data.frame(model.matrix(f1, data = data))
-
+  
   my_ave <- function(x, data) {
     ave(x, data$treat_time, data$time)
   }
-
+  
   g_control_data <- data.frame(sapply(control_data, my_ave, data))
   colnames(g_control_data) <- paste0("g_", colnames(g_control_data))
-
+  
   # Group level p
   data$g_p <- ave(data$p, data$treat_time, data$time)
   data <- cbind(data, g_control_data)
-
+  
   g_control_formula <- as.formula(paste("~", paste(colnames(g_control_data),
                                                    collapse = " + ")))
-
+  
   r_list <- list(data = data, g_control_formula = g_control_formula)
-
+  
   return(r_list)
 }
 
@@ -589,10 +591,10 @@ partial_group_x <- function(data, g_control_formula) {
 calc_pgjtile <- function(data, g_control_formula) {
   g_vars <- unlist(strsplit(as.character(g_control_formula)[2], " \\+ "))
   p_g_vars <- paste0("p_", g_vars)
-
+  
   p_g_control_formula <- formula(paste("Dtilde ~", paste(p_g_vars,
                                                          collapse = " + ")))
-
+  
   fit_pgj <- lm(p_g_control_formula, data = data)
   data$pgjtilde <- predict(fit_pgj)
   Rsq <- summary(fit_pgj)$r.squared
@@ -704,25 +706,25 @@ calc_controlled_beta_weights <- function(data, g_control_formula) {
   r_calc_VD <- calc_VD(data)
   VD <- r_calc_VD$VD
   data <- r_calc_VD$data
-
+  
   data <- partial_group_x(data, g_control_formula)
-
+  
   r_calc_pgjtilde <- calc_pgjtile(data, g_control_formula)
   Rsq <- r_calc_pgjtilde$Rsq
   data <- r_calc_pgjtilde$data
-
+  
   r_calc_Vdp <- calc_Vdp(data)
   Vdp <- r_calc_Vdp$Vdp
   data <- r_calc_Vdp$data
-
+  
   BD <- calc_BD(data, g_control_formula)
   Bb <- calc_Bb(data)
-
+  
   N <- nrow(data)
-
+  
   s_kl <- calculate_s_kl(N, Rsq, VD, Vdp)
   beta_hat_d_bkl <- calculate_beta_hat_d_bkl(Rsq, VD, BD, Vdp, Bb)
-
+  
   r_list <- list(s_kl = s_kl, beta_hat_d_bkl = beta_hat_d_bkl)
   return(r_list)
 }
