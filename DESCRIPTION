@@ -1,13 +1,14 @@
 Package: bacondecomp
 Type: Package
 Title: Goodman-Bacon Decomposition
-Version: 0.1.2
+Version: 0.1.3
 Authors@R: c(
   person("Evan", "Flack", email = "evanjflack@gmail.com",
          role = c("aut", "cre")),
   person("Edward", "Jee", role = c("aut")),
   person("Kyle", "Butts", role = c("ctb"), email = "kyle.butts@colorado.edu",
-         comment = c(ORCID = "0000-0002-9048-8059"))
+         comment = c(ORCID = "0000-0002-9048-8059")),
+  person("Zachary", "Porreca", role = c("ctb"), email = "zjp00003@mix.wvu.edu"),
   )
 Maintainer: Evan Flack <evanjflack@gmail.com>
 Description: Decomposition for differences-in-differences with variation in
