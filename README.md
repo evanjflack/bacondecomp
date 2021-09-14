@@ -62,7 +62,7 @@ df_bacon <- bacon(incearn_ln ~ reform_math,
                   data = bacondecomp::math_reform,
                   id_var = "state",
                   time_var = "class")
-
+                  
 # All 2x2 Comparisons
 head(df_bacon)
 #>    treated untreated    estimate      weight                     type
