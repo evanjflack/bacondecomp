@@ -19,7 +19,6 @@ covariates.
 
 ## Installation
 
-
 You can install `bacondecomp 0.1.2` from CRAN:
 
 ``` r
@@ -35,14 +34,14 @@ install_github("evanjflack/bacondecomp")
 
 ## Functions
 
-  - `bacon()`: calculates all 2x2 differences-in-differences estimates
+-   `bacon()`: calculates all 2x2 differences-in-differences estimates
     and weights for the Bacon-Goodman decomposition.
 
 ## Data
 
-  - `math_refom`: Aggregated data from Goodman (2019, JOLE)
-  - `castle`: Data from Cheng and Hoekstra (2013, JHR)
-  - `divorce:` Data from Stevenson and Wolfers (2006, QJE)
+-   `math_refom`: Aggregated data from Goodman (2019, JOLE)
+-   `castle`: Data from Cheng and Hoekstra (2013, JHR)
+-   `divorce:` Data from Stevenson and Wolfers (2006, QJE)
 
 ## Example
 
@@ -52,31 +51,54 @@ education reform on future earnings following Goodman (2019, JOLE).
 
 ``` r
 library(bacondecomp)
+#> Loading required package: fixest
+#> fixest 0.9.0, BREAKING changes! (Permanently remove this message with fixest_startup_msg(FALSE).) 
+#> - In i():
+#>     + the first two arguments have been swapped! Now it's i(factor_var, continuous_var) for interactions. 
+#>     + argument 'drop' has been removed (put everything in 'ref' now).
+#> - In feglm(): 
+#>     + the default family becomes 'gaussian' to be in line with glm(). Hence, for Poisson estimations, please use fepois() instead.
 df_bacon <- bacon(incearn_ln ~ reform_math,
                   data = bacondecomp::math_reform,
                   id_var = "state",
                   time_var = "class")
+
+# All 2x2 Comparisons
+head(df_bacon)
+#>    treated untreated    estimate      weight                     type
+#> 2     1987      1985  0.04575585 0.031655309 Later vs Earlier Treated
+#> 4     1986      1985  0.11390411 0.001978457 Later vs Earlier Treated
+#> 5     1984      1985  0.12012908 0.001978457 Earlier vs Later Treated
+#> 6     1985      1987  0.01021379 0.039569136 Earlier vs Later Treated
+#> 9     1986      1987 -0.09374495 0.005440756 Earlier vs Later Treated
+#> 10    1984      1987  0.09784857 0.013354583 Earlier vs Later Treated
+
+# Summary of Early vs. Later, Later vs. Earlier, and Treated vs. Untreated
+bacon_summary(df_bacon)
 #>                       type  weight  avg_est
 #> 1 Earlier vs Later Treated 0.06353  0.02868
 #> 2 Later vs Earlier Treated 0.05265  0.03375
 #> 3     Treated vs Untreated 0.88382 -0.00129
+```
 
+``` r
 library(ggplot2)
 
 ggplot(df_bacon) +
   aes(x = weight, y = estimate, shape = factor(type)) +
   geom_point() +
-  geom_hline(yintercept = 0) +
+  geom_hline(yintercept = 0) + 
+  theme_minimal() +
   labs(x = "Weight", y = "Estimate", shape = "Type")
 ```
 
-<img src="man/figures/README-example-1.png" width="100%" />
+<img src="man/figures/README-example-plot-1.png" width="100%" />
 
 ## References
 
 Goodman-Bacon, Andrew. 2018. “Difference-in-Differences with Variation
 in Treatment Timing.” National Bureau of Economic Research Working Paper
-Series No. 25018. doi: 10.3386/w25018.
+Series No. 25018. doi: 10.3386/w25018.
 
 [Paper
 Link](https://cdn.vanderbilt.edu/vu-my/wp-content/uploads/sites/2318/2019/07/29170757/ddtiming_7_29_2019.pdf)
