@@ -18,6 +18,7 @@ knitr::opts_chunk$set(
   out.width = "100%"
 )
 ```
+
 # bacondecomp
 
 `bacondecomp` is a package with tools to perform the Goodman-Bacon decomposition for differences-in-differences with variation in treatment timing. The decomposition can be done with and without time-varying covariates.
@@ -56,14 +57,26 @@ df_bacon <- bacon(incearn_ln ~ reform_math,
                   id_var = "state",
                   time_var = "class")
 
+# All 2x2 Comparisons
+head(df_bacon)
+
+# Summary of Early vs. Later, Later vs. Earlier, and Treated vs. Untreated
+bacon_summary(df_bacon)
+```
+
+
+
+```{r example-plot, fig.height = 4, fig.width = 6}
 library(ggplot2)
 
 ggplot(df_bacon) +
   aes(x = weight, y = estimate, shape = factor(type)) +
   geom_point() +
-  geom_hline(yintercept = 0) +
+  geom_hline(yintercept = 0) + 
+  theme_minimal() +
   labs(x = "Weight", y = "Estimate", shape = "Type")
 ```
+
 
 ## References
 

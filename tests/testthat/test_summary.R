@@ -7,7 +7,7 @@ two_by_twos <- bacon(l_homicide ~ post,
                   time_var = "year", 
                   quietly = T)
 
-sum_df <- print_summary(two_by_twos, return_df = TRUE)
+sum_df <- bacon_summary(two_by_twos, return_df = TRUE)
 sum_df <- sum_df[order(sum_df$type), ]
 sum_df$weight <- round(sum_df$weight, 3)
 sum_df$avg_est <- round(sum_df$avg_est, 3)

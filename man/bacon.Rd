@@ -4,15 +4,13 @@
 \alias{bacon}
 \title{Goodman-Bacon Decomposition}
 \usage{
-bacon(formula, data, id_var, time_var, quietly = F)
+bacon(formula, data, id_var, time_var, quietly = TRUE)
 }
 \arguments{
-\item{formula}{an object of class "formula": a symbolic
-representation of the model to be fitted. Must be  of the form y ~ D + controls,
-where y is the outcome variable,  D is the binary
-treatment indicator, and `controls` can be any additional control variables. Do not
-include the fixed effects in the formula. If using `.` notation must be of 
-the form y ~ D + . - FE1 - FE2}
+\item{formula}{an object of class "formula". Must be  of the form y ~ D + controls,
+where y is the outcome variable,  D is the binary treatment indicator, and
+`controls` can be any additional control variables. Do not include the
+fixed effects in the formula.}
 
 \item{data}{a data.frame containing the variables in the model.}
 
@@ -20,8 +18,9 @@ the form y ~ D + . - FE1 - FE2}
 
 \item{time_var}{character, the name of time variable.}
 
-\item{quietly}{logical, default = FALSE, if set to TRUE then bacon() does not
-print the summary of estimates/weights by type (e.g. Treated vs Untreated)}
+\item{quietly}{logical. If TRUE then bacon() does not
+print the summary of estimates/weights by type (e.g. Treated vs Untreated).
+Default is TRUE. You can also use \code{bacon_summary()} on the result to view this.}
 }
 \value{
 If control variables are included in the formula, then an object of
@@ -36,21 +35,19 @@ If not control variables are included then only the two_by_twos data.frame
  is returned.
 }
 \description{
-bacon() is a function that performs the Goodman-Bacon decomposition for
+\code{bacon()} is a function that performs the Goodman-Bacon decomposition for
  differences-in-differences with variation in treatment timing (with or
  without time-varying covariates).
 }
 \examples{
 # Castle Doctrine (Uncontrolled)
 df_bacon <- bacon(l_homicide ~ post,
-                  data = bacondecomp::castle,
-                  id_var = "state",
-                  time_var = "year")
+  data = bacondecomp::castle, id_var = "state", time_var = "year"
+)
 
 # Castle Doctrine (Controlled)
 ret_bacon <- bacon(l_homicide ~ post + l_pop + l_income,
-                   data = bacondecomp::castle,
-                   id_var = "state",
-                   time_var = "year")
+  data = bacondecomp::castle, id_var = "state", time_var = "year"
+)
 
 }

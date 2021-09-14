@@ -62,17 +62,36 @@ df_bacon <- bacon(incearn_ln ~ reform_math,
                   data = bacondecomp::math_reform,
                   id_var = "state",
                   time_var = "class")
+                  
+# All 2x2 Comparisons
+head(df_bacon)
+#>    treated untreated    estimate      weight                     type
+#> 2     1987      1985  0.04575585 0.031655309 Later vs Earlier Treated
+#> 4     1986      1985  0.11390411 0.001978457 Later vs Earlier Treated
+#> 5     1984      1985  0.12012908 0.001978457 Earlier vs Later Treated
+#> 6     1985      1987  0.01021379 0.039569136 Earlier vs Later Treated
+#> 9     1986      1987 -0.09374495 0.005440756 Earlier vs Later Treated
+#> 10    1984      1987  0.09784857 0.013354583 Earlier vs Later Treated
+# Summary of Early vs. Later, Later vs. Earlier, and Treated vs. Untreated
+bacon_summary(df_bacon)
+#>                       type  weight  avg_est
+#> 1 Earlier vs Later Treated 0.06353  0.02868
+#> 2 Later vs Earlier Treated 0.05265  0.03375
+#> 3     Treated vs Untreated 0.88382 -0.00129
+```
 
+``` r
 library(ggplot2)
 
 ggplot(df_bacon) +
   aes(x = weight, y = estimate, shape = factor(type)) +
   geom_point() +
-  geom_hline(yintercept = 0) +
+  geom_hline(yintercept = 0) + 
+  theme_minimal() +
   labs(x = "Weight", y = "Estimate", shape = "Type")
 ```
 
-<img src="man/figures/README-example-1.png" width="100%" />
+<img src="man/figures/README-example-plot-1.png" width="100%" />
 
 ## References
 
