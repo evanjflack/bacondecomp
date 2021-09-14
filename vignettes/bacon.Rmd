@@ -42,9 +42,9 @@ df_bacon <- bacon(l_homicide ~ post,
 coef_bacon <- sum(df_bacon$estimate * df_bacon$weight)
 print(paste("Weighted sum of decomposition =", round(coef_bacon, 4)))
 
-fit_tw <- lm(l_homicide ~ post + factor(state) + factor(year), 
+fit_tw <- fixest::feols(l_homicide ~ post | state + year, 
              data = bacondecomp::castle)
-print(paste("Two-way FE estimate =", round(fit_tw$coefficients[2], 4)))
+print(paste("Two-way FE estimate =", round(fit_tw$coefficients[1], 4)))
 
 ```
 
@@ -56,6 +56,7 @@ library(ggplot2)
 ggplot(df_bacon) +
   aes(x = weight, y = estimate, shape = factor(type)) +
   labs(x = "Weight", y = "Estimate", shape = "Type") +
+  theme_minimal() +
   geom_point()
 ```
 
@@ -97,6 +98,7 @@ And again we can plot the decomposed between estimates, $\hat{\beta}^d_{b, k, l}
 ```{r plot2, fig.width = 6, fig.height = 4, fig.align = 'center'}
 ggplot(ret_bacon$two_by_twos) +
   aes(x = weight, y = estimate, shape = factor(type)) +
+  theme_minimal() +
   labs(x = "Weight", y = "Estimate") +
   geom_point()
 ```

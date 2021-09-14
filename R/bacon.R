@@ -157,12 +157,12 @@ bacon <- function(formula, data, id_var, time_var, quietly = TRUE) {
 #' Summary of Goodman-Bacon Decomposition
 #' 
 #' Uses the two-by-two output produced by 
-#' \code{bacondecomp::bacon()} to produce 
+#' \code{bacondecomp::bacon} to produce 
 #' average 2x2 estimate and total weight for the following three comparisons: 
 #' Earlier vs. Later (Good), Treated vs. Untreated (Good), and 
 #' Later vs. Earlier (Bad).
 #' 
-#' @param two_by_twos Data.frame produced by \code{bacondecomp::bacon()}.
+#' @param two_by_twos Data.frame produced by \code{bacondecomp::bacon}.
 #' @param return_df Logical. If TRUE, then the summary data.frame is returned.
 #'   Default is False.
 #'   
@@ -460,7 +460,9 @@ calc_Vdp <- function(data) {
 }
 calc_BD <- function(data, g_control_formula) {
   g_vars <- all.vars(g_control_formula)
-
+  # Remove intercept
+  g_vars = g_vars[-grep("Intercept", g_vars)]
+  
   BD_formula <- as.formula(
     paste0("outcome ~ treated + ", paste(g_vars, collapse = " + "), " | id + time")
   )
