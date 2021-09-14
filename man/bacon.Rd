@@ -20,7 +20,7 @@ fixed effects in the formula.}
 
 \item{quietly}{logical. If TRUE then bacon() does not
 print the summary of estimates/weights by type (e.g. Treated vs Untreated).
-Default is TRUE. You can also use `bacon_summary()` on the result to view this.}
+Default is TRUE. You can also use \code{bacon_summary()} on the result to view this.}
 }
 \value{
 If control variables are included in the formula, then an object of
@@ -35,7 +35,7 @@ If not control variables are included then only the two_by_twos data.frame
  is returned.
 }
 \description{
-\code{bacon()}. is a function that performs the Goodman-Bacon decomposition for
+\code{bacon()} is a function that performs the Goodman-Bacon decomposition for
  differences-in-differences with variation in treatment timing (with or
  without time-varying covariates).
 }
@@ -50,8 +50,4 @@ ret_bacon <- bacon(l_homicide ~ post + l_pop + l_income,
   data = bacondecomp::castle, id_var = "state", time_var = "year"
 )
 
-# Simulated Data to show problem
-ret <- bacon(dep_var ~ treat,
-  data = did2s::df_het, id_var = "unit", time_var = "year"
-)
 }

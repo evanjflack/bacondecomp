@@ -13,7 +13,7 @@
 #' @param time_var character, the name of time variable.
 #' @param quietly logical. If TRUE then bacon() does not
 #'  print the summary of estimates/weights by type (e.g. Treated vs Untreated).
-#'  Default is TRUE. You can also use `bacon_summary()` on the result to view this.
+#'  Default is TRUE. You can also use \code{bacon_summary()} on the result to view this.
 #'
 #' @return If control variables are included in the formula, then an object of
 #'  class "list" with three elements:
@@ -37,15 +37,14 @@
 #'   data = bacondecomp::castle, id_var = "state", time_var = "year"
 #' )
 #'
-#' # Simulated Data to show problem
-#' ret <- bacon(dep_var ~ treat,
-#'   data = did2s::df_het, id_var = "unit", time_var = "year"
-#' )
-#' @import stats
+#' @import stats fixest
 #'
 #' @export
 bacon <- function(formula, data, id_var, time_var, quietly = TRUE) {
 
+  # Evaluate formula in data environment
+  formula <- formula(terms(formula, data = data))
+  
   # Unpack variable names and rename variables
   vars <- unpack_variable_names(formula)
   outcome_var <- vars$outcome_var
@@ -56,8 +55,10 @@ bacon <- function(formula, data, id_var, time_var, quietly = TRUE) {
   # Check for NA observations
   nas <- sum(is.na(data[, c("id", "time", "outcome", "treated")]))
   if (length(control_vars > 0)) {
-    mm_control <- data[control_vars]
-    mm_control[complete.cases(mm_control), ]
+    control_formula <- as.formula(
+      paste("~ ", paste(control_vars, collapse = " + "))
+    )
+    mm_control <- model.matrix(control_formula, data = data)
     nas_control <- 1 - (nrow(mm_control) == nrow(data))
     nas <- nas + nas_control
   }
@@ -156,13 +157,12 @@ bacon <- function(formula, data, id_var, time_var, quietly = TRUE) {
 #' Summary of Goodman-Bacon Decomposition
 #' 
 #' Uses the two-by-two output produced by 
-#' \code{\link[bacondecomp::bacon]{bacondecomp::bacon()}} to produce 
+#' \code{bacondecomp::bacon()} to produce 
 #' average 2x2 estimate and total weight for the following three comparisons: 
 #' Earlier vs. Later (Good), Treated vs. Untreated (Good), and 
 #' Later vs. Earlier (Bad).
 #' 
-#' @param two_by_twos Data.frame produced by 
-#'   \code{\link[bacondecomp::bacon]{bacondecomp::bacon()}}.
+#' @param two_by_twos Data.frame produced by \code{bacondecomp::bacon()}.
 #' @param return_df Logical. If TRUE, then the summary data.frame is returned.
 #'   Default is False.
 #'   
@@ -386,8 +386,10 @@ calculate_beta_hat_b <- function(data) {
 }
 collapse_x_p <- function(data, control_vars) {
   # Group level Xs
-  control_data <- data[control_vars]
-  control_data[complete.cases(control_data), ]
+  control_formula <- as.formula(
+    paste("~ ", paste(control_vars, collapse = " + "))
+  )
+  control_data <- data.frame(model.matrix(control_formula, data = data))
 
   my_ave <- function(x, data) {
     ave(x, data$treat_time, data$time)
@@ -419,15 +421,23 @@ calc_VD <- function(data) {
 partial_group_x <- function(data, g_control_formula) {
   g_vars <- unlist(strsplit(as.character(g_control_formula)[2], " \\+ "))
   for (v in g_vars) {
-    g_formula <- as.formula(paste0(v, " ~ 1 | time + id"))
-    fit_g <- fixest::feols(g_formula, data = data)
-    data[, paste0("p_", v)] <- fit_g$residuals
+    # Intercept doesn't work with fixest
+    if(length(grep("Intercept", v)) > 0) {
+      data[, paste0("p_", v)] <- 0
+    } else {
+      g_formula <- as.formula(paste0(v, " ~ 1 | time + id"))
+      fit_g <- fixest::feols(g_formula, data = data)
+      data[, paste0("p_", v)] <- fit_g$residuals
+    }
   }
   return(data)
 }
 calc_pgjtile <- function(data, g_control_formula) {
   g_vars <- unlist(strsplit(as.character(g_control_formula)[2], " \\+ "))
   p_g_vars <- paste0("p_", g_vars)
+  
+  # Don't include p_g_Intercept
+  p_g_vars = p_g_vars[-grep("Intercept", p_g_vars)]
 
   p_g_control_formula <- as.formula(
     paste("Dtilde ~", paste(p_g_vars, collapse = " + "))

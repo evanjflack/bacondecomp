@@ -31,13 +31,7 @@ simple_formula_results <- compare_fe_and_bacon(simple_formula)
 interaction_formula <- l_homicide ~ post + l_pop*l_income
 interaction_formula_results <- compare_fe_and_bacon(interaction_formula)
 
-
-dot_formula <- l_homicide ~ post + . - state - year
-dot_formula_results <- compare_fe_and_bacon(dot_formula) 
-
 test_that("Two Way FE recovered", {
   expect_equal(simple_formula_results$bacon, simple_formula_results$two_way)
   expect_equal(interaction_formula_results$bacon, interaction_formula_results$two_way)
-  expect_equal(dot_formula_results$bacon, dot_formula_results$two_way)
-  expect_equal(dot_formula_results$bacon, simple_formula_results$two_way)
 })

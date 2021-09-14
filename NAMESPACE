@@ -2,4 +2,5 @@
 
 export(bacon)
 export(bacon_summary)
+import(fixest)
 import(stats)

@@ -11,9 +11,9 @@ df_bacon <- bacon(l_homicide ~ post,
 two_way_bacon_coef <- sum(df_bacon$estimate * df_bacon$weight)
 
 # Two way FE
-two_way_fe <- lm(l_homicide ~ post + factor(state) + factor(year),
+two_way_fe <- fixest::feols(l_homicide ~ post | state + year,
                  data = bacondecomp::castle)
-two_way_fe_coef <- two_way_fe$coefficients["post"]
+two_way_fe_coef <- two_way_fe$coefficients[1]
 names(two_way_fe_coef) <- NULL
 
 test_that("Two-way FE recovered", {
@@ -23,7 +23,7 @@ test_that("Two-way FE recovered", {
 # Controlled -------------------------------------------------------------------
 df <- bacondecomp::castle[, c("state", "year", "l_homicide", "post", "l_income", 
                         "l_pop")]
-test_formula <- l_homicide ~ post + . + l_pop - state - year
+test_formula <- l_homicide ~ post + l_income + l_pop
 ret_bacon <- bacon(test_formula, 
                    data = df,
                    id_var = "state",
