@@ -19,8 +19,7 @@ covariates.
 
 ## Installation
 
-
-You can install `bacondecomp 0.1.2` from CRAN:
+You can install `bacondecomp 0.1.1` from CRAN:
 
 ``` r
 install.packages("bacondecomp")
@@ -35,14 +34,14 @@ install_github("evanjflack/bacondecomp")
 
 ## Functions
 
-  - `bacon()`: calculates all 2x2 differences-in-differences estimates
+-   `bacon()`: calculates all 2x2 differences-in-differences estimates
     and weights for the Bacon-Goodman decomposition.
 
 ## Data
 
-  - `math_refom`: Aggregated data from Goodman (2019, JOLE)
-  - `castle`: Data from Cheng and Hoekstra (2013, JHR)
-  - `divorce:` Data from Stevenson and Wolfers (2006, QJE)
+-   `math_refom`: Aggregated data from Goodman (2019, JOLE)
+-   `castle`: Data from Cheng and Hoekstra (2013, JHR)
+-   `divorce:` Data from Stevenson and Wolfers (2006, QJE)
 
 ## Example
 
@@ -52,14 +51,17 @@ education reform on future earnings following Goodman (2019, JOLE).
 
 ``` r
 library(bacondecomp)
+#> Loading required package: fixest
+#> fixest 0.9.0, BREAKING changes! (Permanently remove this message with fixest_startup_msg(FALSE).) 
+#> - In i():
+#>     + the first two arguments have been swapped! Now it's i(factor_var, continuous_var) for interactions. 
+#>     + argument 'drop' has been removed (put everything in 'ref' now).
+#> - In feglm(): 
+#>     + the default family becomes 'gaussian' to be in line with glm(). Hence, for Poisson estimations, please use fepois() instead.
 df_bacon <- bacon(incearn_ln ~ reform_math,
                   data = bacondecomp::math_reform,
                   id_var = "state",
                   time_var = "class")
-#>                       type  weight  avg_est
-#> 1 Earlier vs Later Treated 0.06353  0.02868
-#> 2 Later vs Earlier Treated 0.05265  0.03375
-#> 3     Treated vs Untreated 0.88382 -0.00129
 
 library(ggplot2)
 
