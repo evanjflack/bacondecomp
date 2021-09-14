@@ -51,7 +51,13 @@ education reform on future earnings following Goodman (2019, JOLE).
 
 ``` r
 library(bacondecomp)
-
+#> Loading required package: fixest
+#> fixest 0.9.0, BREAKING changes! (Permanently remove this message with fixest_startup_msg(FALSE).) 
+#> - In i():
+#>     + the first two arguments have been swapped! Now it's i(factor_var, continuous_var) for interactions. 
+#>     + argument 'drop' has been removed (put everything in 'ref' now).
+#> - In feglm(): 
+#>     + the default family becomes 'gaussian' to be in line with glm(). Hence, for Poisson estimations, please use fepois() instead.
 df_bacon <- bacon(incearn_ln ~ reform_math,
                   data = bacondecomp::math_reform,
                   id_var = "state",
@@ -66,7 +72,6 @@ head(df_bacon)
 #> 6     1985      1987  0.01021379 0.039569136 Earlier vs Later Treated
 #> 9     1986      1987 -0.09374495 0.005440756 Earlier vs Later Treated
 #> 10    1984      1987  0.09784857 0.013354583 Earlier vs Later Treated
-
 # Summary of Early vs. Later, Later vs. Earlier, and Treated vs. Untreated
 bacon_summary(df_bacon)
 #>                       type  weight  avg_est

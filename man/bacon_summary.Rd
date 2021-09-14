@@ -7,14 +7,14 @@
 bacon_summary(two_by_twos, return_df = FALSE)
 }
 \arguments{
-\item{two_by_twos}{Data.frame produced by \code{bacondecomp::bacon()}.}
+\item{two_by_twos}{Data.frame produced by \code{bacondecomp::bacon}.}
 
 \item{return_df}{Logical. If TRUE, then the summary data.frame is returned.
 Default is False.}
 }
 \description{
 Uses the two-by-two output produced by 
-\code{bacondecomp::bacon()} to produce 
+\code{bacondecomp::bacon} to produce 
 average 2x2 estimate and total weight for the following three comparisons: 
 Earlier vs. Later (Good), Treated vs. Untreated (Good), and 
 Later vs. Earlier (Bad).
